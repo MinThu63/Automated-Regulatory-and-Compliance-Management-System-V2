@@ -202,3 +202,34 @@ body.dark-mode .app-footer { border-color: #1a1a4e; }
   .table { font-size: 0.8rem; }
 }
 #printableReport { display: none; }
+
+/* ==========================================
+   Audit Trail — LLM Log Formatting
+   ========================================== */
+
+.bg-purple { background-color: #6f42c1 !important; color: #fff; }
+body.dark-mode .bg-purple { background-color: #9b59b6 !important; }
+
+#auditBody td { vertical-align: top; font-size: 0.875rem; }
+#auditBody td:nth-child(5) { max-width: 400px; word-break: break-word; }
+
+#auditBody .btn-outline-secondary {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+}
+
+#auditBody .card-body {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+body.dark-mode #auditBody .card-body {
+  background: #1a1a4e;
+  border-color: #2a2a5e;
+  color: #e0e0e0;
+}
+
+body.dark-mode #auditBody code {
+  color: #7dcea0;
+}

@@ -408,7 +408,7 @@ function showView(viewName) {
   }
   // Load data for the view
   if (viewName === 'alerts') { loadAlerts(); loadSummary(); }
-  if (viewName === 'reports') { loadCategories(); loadTrends(); loadReportsSummary(); loadSeverityPieChart(); loadCategoryBarChart(); loadImpactDoughnutChart(); loadTaskStatusChart(); }
+  if (viewName === 'reports') { loadCategories(); loadTrends(); loadReportsSummary(); loadSeverityPieChart(); loadCategoryBarChart(); loadImpactDoughnutChart(); loadTaskStatusChart(); loadGapResolutionChart(); loadSourceActivityChart(); loadResponseTimeChart(); loadTaskDeadlineChart(); }
   if (viewName === 'tasks') { loadTasks(); }
   if (viewName === 'gaps') { loadGaps(); }
   if (viewName === 'sources') { loadSources(); }
@@ -805,6 +805,266 @@ async function loadTaskStatusChart() {
         indexAxis: 'y',
         plugins: { legend: { display: false } },
         scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+  } catch (err) { /* silent */ }
+}
+
+// ==================== ENHANCED REPORT CHARTS ====================
+
+var gapResolutionChart = null;
+var sourceActivityChartInstance = null;
+var responseTimeChartInstance = null;
+var taskDeadlineChartInstance = null;
+
+// 1. Compliance Gap Resolution Rate — gaps opened vs resolved over time
+async function loadGapResolutionChart() {
+  try {
+    var response = await fetch(API_BASE + '/api/dashboard/gap-resolution');
+    if (!response.ok) return;
+    var data = await response.json();
+
+    var allDates = [];
+    data.opened.forEach(function(d) { if (allDates.indexOf(d.date) === -1) allDates.push(d.date); });
+    data.resolved.forEach(function(d) { if (allDates.indexOf(d.date) === -1) allDates.push(d.date); });
+    allDates.sort();
+
+    var openedData = allDates.map(function(date) {
+      var found = data.opened.find(function(d) { return d.date === date; });
+      return found ? found.count : 0;
+    });
+    var resolvedData = allDates.map(function(date) {
+      var found = data.resolved.find(function(d) { return d.date === date; });
+      return found ? found.count : 0;
+    });
+
+    var labels = allDates.map(function(d) { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); });
+
+    var ctx = document.getElementById('gapResolutionChart').getContext('2d');
+    if (gapResolutionChart) gapResolutionChart.destroy();
+
+    gapResolutionChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels.length > 0 ? labels : ['No Data'],
+        datasets: [
+          {
+            label: 'Gaps Opened',
+            data: openedData.length > 0 ? openedData : [0],
+            backgroundColor: 'rgba(220, 53, 69, 0.7)',
+            borderRadius: 4
+          },
+          {
+            label: 'Gaps Resolved',
+            data: resolvedData.length > 0 ? resolvedData : [0],
+            backgroundColor: 'rgba(25, 135, 84, 0.7)',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+  } catch (err) { /* silent */ }
+}
+
+// 2. Regulatory Source Activity — which sources generate the most regulations/changes
+async function loadSourceActivityChart() {
+  try {
+    var response = await fetch(API_BASE + '/api/dashboard/source-activity');
+    if (!response.ok) return;
+    var sources = await response.json();
+
+    var ctx = document.getElementById('sourceActivityChart').getContext('2d');
+    if (sourceActivityChartInstance) sourceActivityChartInstance.destroy();
+
+    var colors = ['#0d6efd', '#198754', '#dc3545', '#ffc107', '#6f42c1', '#0dcaf0', '#fd7e14'];
+
+    sourceActivityChartInstance = new Chart(ctx, {
+      type: 'polarArea',
+      data: {
+        labels: sources.map(function(s) { return s.source_name; }),
+        datasets: [{
+          data: sources.map(function(s) { return s.regulation_count; }),
+          backgroundColor: sources.map(function(_, i) { return colors[i % colors.length] + '99'; }),
+          borderColor: sources.map(function(_, i) { return colors[i % colors.length]; }),
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 10, font: { size: 11 } } },
+          title: { display: true, text: 'Regulations per Source', font: { size: 13 } }
+        }
+      }
+    });
+
+    // Also populate the source activity table
+    var tbody = document.getElementById('sourceActivityBody');
+    if (tbody) {
+      tbody.innerHTML = '';
+      sources.forEach(function(s) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + s.source_name + '</td><td>' + s.regulation_count + '</td><td>' + s.change_count + '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+  } catch (err) { /* silent */ }
+}
+
+// 3. Alert Response Rate — reviewed vs pending over time
+async function loadResponseTimeChart() {
+  try {
+    var response = await fetch(API_BASE + '/api/dashboard/response-time');
+    if (!response.ok) throw new Error('Failed to fetch');
+    var data = await response.json();
+
+    var labels = data.map(function(d) { return new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); });
+    var reviewedData = data.map(function(d) { return d.reviewed; });
+    var pendingData = data.map(function(d) { return d.pending; });
+
+    var ctx = document.getElementById('responseTimeChart').getContext('2d');
+    if (responseTimeChartInstance) responseTimeChartInstance.destroy();
+
+    responseTimeChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels.length > 0 ? labels : ['No Data'],
+        datasets: [
+          {
+            label: 'Reviewed (Read/Dismissed)',
+            data: reviewedData.length > 0 ? reviewedData : [0],
+            borderColor: '#198754',
+            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: 'Pending (Unread)',
+            data: pendingData.length > 0 ? pendingData : [0],
+            borderColor: '#dc3545',
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+            fill: true,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+
+    // Response metrics summary
+    var totalAlerts = data.reduce(function(sum, d) { return sum + d.total; }, 0);
+    var totalReviewed = data.reduce(function(sum, d) { return sum + d.reviewed; }, 0);
+    var reviewRate = totalAlerts > 0 ? Math.round((totalReviewed / totalAlerts) * 100) : 0;
+
+    var metricsDiv = document.getElementById('responseMetrics');
+    if (metricsDiv) {
+      metricsDiv.innerHTML =
+        '<div class="row text-center">' +
+        '<div class="col-4"><h3 class="text-primary mb-0">' + totalAlerts + '</h3><small class="text-muted">Total Alerts</small></div>' +
+        '<div class="col-4"><h3 class="text-success mb-0">' + totalReviewed + '</h3><small class="text-muted">Reviewed</small></div>' +
+        '<div class="col-4"><h3 class="text-' + (reviewRate >= 70 ? 'success' : reviewRate >= 40 ? 'warning' : 'danger') + ' mb-0">' + reviewRate + '%</h3><small class="text-muted">Review Rate</small></div>' +
+        '</div>' +
+        '<div class="progress mt-3" style="height: 24px;">' +
+        '<div class="progress-bar bg-success" style="width: ' + reviewRate + '%;">' + reviewRate + '% Reviewed</div>' +
+        '<div class="progress-bar bg-danger" style="width: ' + (100 - reviewRate) + '%;">' + (100 - reviewRate) + '% Pending</div>' +
+        '</div>';
+    }
+  } catch (err) {
+    var metricsDiv = document.getElementById('responseMetrics');
+    if (metricsDiv) {
+      metricsDiv.innerHTML =
+        '<div class="row text-center">' +
+        '<div class="col-4"><h3 class="text-primary mb-0">0</h3><small class="text-muted">Total Alerts</small></div>' +
+        '<div class="col-4"><h3 class="text-success mb-0">0</h3><small class="text-muted">Reviewed</small></div>' +
+        '<div class="col-4"><h3 class="text-muted mb-0">0%</h3><small class="text-muted">Review Rate</small></div>' +
+        '</div>' +
+        '<div class="progress mt-3" style="height: 24px;">' +
+        '<div class="progress-bar bg-secondary" style="width: 100%;">No data available</div>' +
+        '</div>';
+    }
+  }
+}
+
+// 4. Task Deadline Burndown — upcoming deadlines on a timeline
+async function loadTaskDeadlineChart() {
+  try {
+    var response = await fetch(API_BASE + '/api/dashboard/task-deadlines');
+    if (!response.ok) return;
+    var tasks = await response.json();
+
+    if (tasks.length === 0) {
+      var ctx = document.getElementById('taskDeadlineChart').getContext('2d');
+      if (taskDeadlineChartInstance) taskDeadlineChartInstance.destroy();
+      taskDeadlineChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: ['No pending tasks'], datasets: [{ data: [0], backgroundColor: '#198754' }] },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+      return;
+    }
+
+    var now = new Date();
+    var labels = tasks.map(function(t) { return t.title.length > 20 ? t.title.substring(0, 20) + '...' : t.title; });
+    var daysUntilDeadline = tasks.map(function(t) {
+      var deadline = new Date(t.deadline);
+      return Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+    });
+    var barColors = daysUntilDeadline.map(function(days) {
+      if (days < 0) return '#dc3545';       // Overdue — red
+      if (days <= 3) return '#ffc107';       // Urgent — yellow
+      if (days <= 7) return '#fd7e14';       // Soon — orange
+      return '#198754';                       // Safe — green
+    });
+
+    var ctx = document.getElementById('taskDeadlineChart').getContext('2d');
+    if (taskDeadlineChartInstance) taskDeadlineChartInstance.destroy();
+
+    taskDeadlineChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Days Until Deadline',
+          data: daysUntilDeadline,
+          backgroundColor: barColors,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: 'Days Until Deadline (red = overdue, yellow = urgent, green = safe)', font: { size: 12 } },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                var days = context.raw;
+                if (days < 0) return Math.abs(days) + ' days overdue';
+                if (days === 0) return 'Due today';
+                return days + ' days remaining';
+              },
+              afterLabel: function(context) {
+                return 'Assignee: ' + tasks[context.dataIndex].assignee;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: 'Days' },
+            grid: { color: function(context) { return context.tick.value === 0 ? '#dc3545' : 'rgba(0,0,0,0.1)'; } }
+          }
+        }
       }
     });
   } catch (err) { /* silent */ }
@@ -1702,6 +1962,68 @@ function cancelPolicyEdit() {
 
 // ==================== AUDIT TRAIL VIEW (Task 5.9) ====================
 
+// ==================== AUDIT LOG DESCRIPTION FORMATTER ====================
+
+function formatAuditDescription(description) {
+  if (!description) return { summary: '—', isLLM: false };
+
+  // Try to parse as JSON (LLM audit logs store JSON in description)
+  try {
+    var data = JSON.parse(description);
+    if (data && typeof data === 'object' && data.model) {
+      // This is an LLM audit log entry
+      var summary = '';
+      summary += '<strong>Model:</strong> ' + (data.model || 'N/A');
+      if (data.embedding_model) summary += ' &nbsp;|&nbsp; <strong>Embeddings:</strong> ' + data.embedding_model;
+      if (data.vector_db) summary += ' &nbsp;|&nbsp; <strong>Vector DB:</strong> ' + data.vector_db;
+      summary += '<br>';
+      if (data.target) summary += '<strong>Target:</strong> ' + data.target + '<br>';
+      if (data.result) summary += '<strong>Result:</strong> <span class="badge bg-' + getImpactBadgeColor(data.result) + '">' + data.result + '</span><br>';
+      if (data.chunks_retrieved !== undefined) summary += '<strong>Chunks Retrieved:</strong> ' + data.chunks_retrieved + '<br>';
+      if (data.duration_ms) summary += '<strong>Duration:</strong> ' + data.duration_ms + 'ms';
+
+      // Build expandable details
+      var details = '';
+      if (data.input) {
+        // Extract just the key parts from the prompt, not the full text
+        var inputPreview = data.input.length > 150 ? data.input.substring(0, 150) + '...' : data.input;
+        details += '<div class="mt-2"><strong>Prompt Preview:</strong><br><small class="text-muted" style="white-space:pre-wrap; word-break:break-word;">' + escapeHtml(inputPreview) + '</small></div>';
+      }
+      if (data.output) {
+        var outputPreview = data.output.length > 200 ? data.output.substring(0, 200) + '...' : data.output;
+        details += '<div class="mt-2"><strong>LLM Output:</strong><br><code style="white-space:pre-wrap; word-break:break-word; font-size:0.8rem;">' + escapeHtml(outputPreview) + '</code></div>';
+      }
+      if (data.timestamp) details += '<div class="mt-1"><small class="text-muted"><strong>LLM Call Time:</strong> ' + new Date(data.timestamp).toLocaleString() + '</small></div>';
+
+      return { summary: summary, details: details, isLLM: true };
+    }
+  } catch (e) {
+    // Not JSON — treat as plain text
+  }
+
+  // Plain text description (non-LLM logs)
+  if (description.length > 100) {
+    return { summary: description.substring(0, 100) + '...', details: description, isLLM: false };
+  }
+  return { summary: description, isLLM: false };
+}
+
+function getImpactBadgeColor(impact) {
+  if (impact === 'Critical') return 'danger';
+  if (impact === 'High') return 'warning text-dark';
+  if (impact === 'Medium') return 'info';
+  if (impact === 'Low') return 'success';
+  return 'secondary';
+}
+
+function escapeHtml(text) {
+  var div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ==================== AUDIT TRAIL VIEW (Task 5.9) ====================
+
 async function loadAuditLogs(filters) {
   try {
     showLoading('auditBody');
@@ -1724,7 +2046,14 @@ async function loadAuditLogs(filters) {
     var tbody = document.getElementById('auditBody');
     tbody.innerHTML = '';
 
-    logs.forEach(function (log) {
+    if (logs.length === 0) {
+      showEmpty('auditBody', 'No audit logs found.');
+      return;
+    }
+
+    var pageData = paginateArray(logs, auditPage);
+
+    pageData.forEach(function (log, index) {
       var tr = document.createElement('tr');
 
       var tdUser = document.createElement('td');
@@ -1732,7 +2061,10 @@ async function loadAuditLogs(filters) {
       tr.appendChild(tdUser);
 
       var tdAction = document.createElement('td');
-      tdAction.textContent = log.action_type;
+      var actionBadge = document.createElement('span');
+      actionBadge.className = 'badge ' + getActionTypeBadge(log.action_type);
+      actionBadge.textContent = log.action_type;
+      tdAction.appendChild(actionBadge);
       tr.appendChild(tdAction);
 
       var tdTable = document.createElement('td');
@@ -1740,11 +2072,41 @@ async function loadAuditLogs(filters) {
       tr.appendChild(tdTable);
 
       var tdTarget = document.createElement('td');
-      tdTarget.textContent = log.target_id;
+      tdTarget.textContent = log.target_id || '—';
       tr.appendChild(tdTarget);
 
+      // Formatted description
       var tdDesc = document.createElement('td');
-      tdDesc.textContent = log.description;
+      tdDesc.style.maxWidth = '400px';
+      var formatted = formatAuditDescription(log.description);
+
+      if (formatted.isLLM) {
+        var summaryDiv = document.createElement('div');
+        summaryDiv.innerHTML = formatted.summary;
+        tdDesc.appendChild(summaryDiv);
+
+        if (formatted.details) {
+          var detailsId = 'auditDetail-' + auditPage + '-' + index;
+          var toggleBtn = document.createElement('button');
+          toggleBtn.className = 'btn btn-sm btn-outline-secondary mt-1';
+          toggleBtn.textContent = 'View Details';
+          toggleBtn.setAttribute('data-bs-toggle', 'collapse');
+          toggleBtn.setAttribute('data-bs-target', '#' + detailsId);
+          tdDesc.appendChild(toggleBtn);
+
+          var detailsDiv = document.createElement('div');
+          detailsDiv.className = 'collapse mt-2';
+          detailsDiv.id = detailsId;
+          detailsDiv.innerHTML = '<div class="card card-body p-2" style="font-size:0.8rem; max-height:250px; overflow-y:auto;">' + formatted.details + '</div>';
+          tdDesc.appendChild(detailsDiv);
+        }
+      } else {
+        tdDesc.textContent = formatted.summary;
+        if (formatted.details && formatted.details !== formatted.summary) {
+          tdDesc.title = formatted.details; // Show full text on hover
+          tdDesc.style.cursor = 'help';
+        }
+      }
       tr.appendChild(tdDesc);
 
       var tdTime = document.createElement('td');
@@ -1753,9 +2115,27 @@ async function loadAuditLogs(filters) {
 
       tbody.appendChild(tr);
     });
+
+    // Render pagination
+    renderPagination('auditPagination', auditPage, logs.length, function(page) {
+      auditPage = page;
+      loadAuditLogs(filters);
+    });
   } catch (err) {
     showError('Unable to load audit logs. Please try again later.');
   }
+}
+
+function getActionTypeBadge(actionType) {
+  if (!actionType) return 'bg-secondary';
+  var type = actionType.toUpperCase();
+  if (type.indexOf('LLM') >= 0) return 'bg-purple';
+  if (type.indexOf('CREATE') >= 0 || type.indexOf('INSERT') >= 0) return 'bg-success';
+  if (type.indexOf('UPDATE') >= 0 || type.indexOf('EDIT') >= 0) return 'bg-warning text-dark';
+  if (type.indexOf('DELETE') >= 0) return 'bg-danger';
+  if (type.indexOf('LOGIN') >= 0) return 'bg-info';
+  if (type.indexOf('VIEW') >= 0 || type.indexOf('READ') >= 0) return 'bg-light text-dark';
+  return 'bg-secondary';
 }
 
 async function loadUsersDropdown() {

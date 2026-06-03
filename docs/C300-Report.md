@@ -22,7 +22,7 @@ This project addresses this critical business need by developing an automated re
 
 **Project Objectives**
 
-- Automate the retrieval of regulatory updates from 7 international and local regulatory bodies (MAS, FATF, FinCEN, ECB, FCA, BIS, HKMA) via web scraping and the MAS Official API.
+- Automate the retrieval of regulatory updates from MAS via web scraping, with a phased expansion plan for other international regulatory bodies (FATF, FinCEN, ECB, FCA, BIS, HKMA).
 - Detect and analyze changes in regulatory documents by comparing versions and recording semantic differences.
 - Assess how new regulations affect existing compliance processes using LLM-powered impact analysis (Critical, High, Medium, Low) with keyword-based fallback.
 - Provide automated alerts categorized by severity (Immediate Action Required, Review Recommended, Informational) and user-friendly dashboards for compliance teams.
@@ -41,7 +41,7 @@ Following guidance from GLDB's industry partner (Patrick), the project adopts a 
 
 The system covers 9 functional modules:
 
-1. Regulatory Feed Integration (web scraping + MAS API)
+1. Regulatory Feed Integration (MAS web scraping with fallback data)
 2. Change Detection (biweekly automated scanning)
 3. Impact Assessment (LLM-powered risk analysis with keyword fallback)
 4. Notification and Alert System (severity-categorized alerts)
@@ -54,14 +54,15 @@ The system covers 9 functional modules:
 **Deliverables:**
 - Working web application (Node.js backend + decoupled HTML/JS frontend)
 - MySQL database with 9 normalized tables
-- Automated feed integrator service (7 scrapers + 1 API)
+- Automated feed integrator service (MAS web scraping)
+- RAG pipeline with Chroma vector database and OpenAI embeddings
+- PII detection and filtering service (PDPA compliance)
 - Project documentation and report
 
 **Project Assumptions**
 
 - The system operates on localhost during development; deployment to a production server is planned for a later phase.
 - Regulatory source websites (MAS, FATF, etc.) maintain their current HTML structure. If a site changes its layout, the scraper falls back to cached reference data.
-- The MAS Official API remains free and publicly accessible without an API key.
 - All team members have access to Node.js (v18+), MySQL, and the shared Azure database server.
 - The system is designed as a Proof of Concept (POC) for demonstration purposes; production-grade features such as JWT session tokens, rate limiting, and HTTPS are out of scope for this phase.
 - The industry partner (GLDB) will provide sample Policy & Procedure Manuals (PMPs) for validation of the compliance gap analysis module.
@@ -73,7 +74,7 @@ The system covers 9 functional modules:
 ### 1.2 Functional Requirements
 
 **FR1: Regulatory Feed Integration**
-The system must connect to external regulatory databases, central banks, and government portals (such as MAS, FATF, FinCEN, ECB, FCA, BIS, and HKMA) via web scraping and the MAS Official API to retrieve regulatory updates. It must parse the retrieved HTML and JSON data using axios and cheerio, perform duplicate detection against existing records, and store new regulations in the internal MySQL knowledge base with source attribution, category classification, and version tracking.
+The system must connect to external regulatory databases, central banks, and government portals (primarily MAS for Phase 1, with expansion to FATF, FinCEN, ECB, FCA, BIS, and HKMA in Phase 2) via web scraping to retrieve regulatory updates. It must parse the retrieved HTML data using axios and cheerio, perform duplicate detection against existing records, and store new regulations in the internal MySQL knowledge base with source attribution, category classification, and version tracking. The system includes fallback reference data to ensure continuity when live sources are unreachable.
 
 **FR2: Automated Change Detection**
 The system must automatically scan for updates in regulatory documents and advisories approximately every two weeks using a node-cron scheduled job. When a regulation with a higher version number is detected, the system must record the version change in the regulation_changes table along with a description of the semantic differences between the old and new versions.
@@ -166,9 +167,9 @@ BR11 (LLM Traceability): Every LLM API call must be recorded in the audit_logs t
 
 | Sprint | Planned | Completed | Notes |
 |--------|---------|-----------|-------|
-| Sprint 1 | All backend API endpoints, feed integrator, database schema | 25+ endpoints, feed integrator (7 sources + MAS API), 9-table schema with seed data, audit middleware | All planned items delivered. 80+ regulations ingested on first run. |
+| Sprint 1 | All backend API endpoints, feed integrator, database schema | 25+ endpoints, feed integrator (MAS web scraping with fallback), 9-table schema with seed data, audit middleware | All planned items delivered. 30+ MAS regulations ingested on first run. |
 | Sprint 2 | All 10 frontend dashboard views, charts, UI | 10 sidebar views, login overlay, Chart.js visualizations (pie, bar, doughnut, line), dark mode, pagination, CSV export, print report | All planned items delivered. Minor CSS adjustments carried to Sprint 3. |
-| Sprint 3 | Should Have/Nice to Have features, testing, bug fixes, demo prep | Dark mode persistence, responsive sidebar, toast notifications, impact filtering, deadline highlighting, comprehensive testing (32 test cases passed) | All Must Have and most Should Have features completed. LLM integration and PII guardrails deferred to post-sprint phase per industry partner phased approach. |
+| Sprint 3 | Should Have/Nice to Have features, testing, bug fixes, demo prep | Dark mode persistence, responsive sidebar, toast notifications, impact filtering, deadline highlighting, LLM integration (RAG pipeline with Chroma), PII guardrails, audit trail formatting, comprehensive testing (25 test specifications passed) | All Must Have and Should Have features completed. RAG pipeline and PII filter fully implemented. |
 
 ---
 
@@ -209,7 +210,7 @@ The current manual compliance process at GLDB involves compliance officers manua
 
 Our automated system transforms this into a proactive, real-time pipeline:
 
-1. **Automated Ingestion:** The feedIntegrator.js service scrapes 7 regulatory authority websites and calls the MAS API every 14 days (and on server startup), automatically retrieving new regulatory data.
+1. **Automated Ingestion:** The feedIntegrator.js service scrapes the MAS regulatory website every 14 days (and on server startup), automatically retrieving new regulatory data. Fallback reference data ensures continuity when the live source is unreachable.
 2. **Change Detection:** The system compares scraped regulation versions against stored versions, recording any changes with semantic difference descriptions.
 3. **Impact Assessment:** Each change is automatically analyzed using LLM (OpenAI GPT) to determine its impact on GLDB's operations, scoring it as Critical/High/Medium/Low based on semantic understanding of the regulatory text. A keyword-based fallback is used when the LLM is unavailable.
 4. **Alert Generation:** Alerts are auto-created with severity levels, appearing immediately on the compliance officer's dashboard.
@@ -328,14 +329,14 @@ MySQL Database (9 tables on Azure)
 Feed Integrator (services/feedIntegrator.js)
     ^
     | axios + cheerio
-External Regulatory Websites (7 sources + MAS API)
+External Regulatory Websites (MAS — Phase 1)
 ```
 
 **Backend Layer:** Node.js/Express server exposing 25+ RESTful API endpoints returning raw JSON. Routes are organized into 9 separate modules under the routes/ directory for clean separation of concerns. Authentication uses bcryptjs for password hashing. A shared audit logging middleware automatically records user actions.
 
 **Frontend Layer:** Completely separate application in the frontend/ directory built with plain HTML, Bootstrap 5 CSS, and vanilla JavaScript. Communicates with the backend exclusively through fetch() HTTP requests. Uses Chart.js (loaded via CDN) for data visualization. No frontend frameworks or build tools.
 
-**Automation Layer:** The feedIntegrator.js background service runs inside the Node.js process, triggered by node-cron on a biweekly schedule. It scrapes 7 regulatory websites in parallel using axios and cheerio, calls the MAS Official API, performs duplicate detection, LLM-powered impact assessment (with keyword fallback), and auto-generates alerts and change records. All LLM interactions are logged in the audit trail for traceability.
+**Automation Layer:** The feedIntegrator.js background service runs inside the Node.js process, triggered by node-cron on a biweekly schedule. It scrapes the MAS regulatory website using axios and cheerio, performs duplicate detection, RAG-powered impact assessment (using Chroma vector search + OpenAI GPT-4o-mini), and auto-generates alerts and change records. A PII filter scans all content before LLM processing to ensure PDPA compliance. All LLM interactions are logged in the audit trail for traceability. Fallback reference data is used when the live MAS website is unreachable.
 
 **Database:** MySQL with 9 normalized tables (users, regulatory_sources, regulations, regulation_changes, alerts, internal_policies, compliance_gaps, tasks, audit_logs) hosted on Azure (dft-fyp.mysql.database.azure.com). All tables use foreign key constraints for referential integrity.
 
@@ -350,8 +351,10 @@ External Regulatory Websites (7 sources + MAS API)
 | Scraping | axios + cheerio | HTTP requests + HTML parsing |
 | Scheduling | node-cron | Automated biweekly feed integration |
 | Configuration | dotenv | Externalized credentials and URLs |
-| AI/LLM | OpenAI API | Impact assessment, regulatory analysis, gap comparison |
-| Vector DB | Chroma | Semantic vector search for RAG pipeline |
+| AI/LLM | OpenAI API (GPT-4o-mini) | Impact assessment, regulatory analysis, gap comparison |
+| Embeddings | OpenAI text-embedding-3-small | 1536-dimension vector embeddings for RAG |
+| Vector DB | Chroma (localhost:8000) | Semantic vector search for RAG pipeline |
+| PII Filter | Custom regex service | NRIC, phone, email, address, credit card detection |
 | Frontend | HTML + Bootstrap 5 + Vanilla JS | Decoupled dashboard UI |
 | Visualization | Chart.js (CDN) | Pie, bar, doughnut, and line charts |
 
@@ -393,6 +396,7 @@ The database consists of 9 tables with the following relationships:
 | DELETE | /api/tasks/:id | Delete task |
 | GET | /api/compliance-gaps | Gaps with regulation + policy info |
 | POST | /api/compliance-gaps | Create gap |
+| POST | /api/compliance-gaps/analyze | RAG-powered gap analysis (LLM) |
 | PATCH | /api/compliance-gaps/:id | Update gap status |
 | GET | /api/regulatory-sources | List sources |
 | POST | /api/regulatory-sources | Add source |
@@ -422,7 +426,9 @@ routes/
 middleware/
   auditLog.js                # Shared audit logging helper
 services/
-  feedIntegrator.js           # Automated scraper + MAS API
+  feedIntegrator.js           # Automated MAS web scraper
+  ragEngine.js                # RAG pipeline (chunking, embedding, retrieval, LLM)
+  piiFilter.js                # PII detection and blocking (PDPA compliance)
 frontend/
   index.html                 # Dashboard UI (10 views, login)
   styles.css                 # All custom CSS (dark mode, responsive)
@@ -433,13 +439,13 @@ frontend/
 
 | Source | Method | Scope |
 |--------|--------|-------|
-| MAS | Web Scraping + API | Singapore |
-| FATF | Web Scraping | Global |
-| FinCEN | Web Scraping | US |
-| ECB | Web Scraping | Europe |
-| FCA | Web Scraping | UK |
-| BIS | Web Scraping | Global |
-| HKMA | Web Scraping | Asia |
+| MAS | Web Scraping | Singapore |
+| FATF | Web Scraping (Phase 2) | Global |
+| FinCEN | Web Scraping (Phase 2) | US |
+| ECB | Web Scraping (Phase 2) | Europe |
+| FCA | Web Scraping (Phase 2) | UK |
+| BIS | Web Scraping (Phase 2) | Global |
+| HKMA | Web Scraping (Phase 2) | Asia |
 
 **Sequence Diagram — Automated Feed Integration Pipeline:**
 
@@ -540,10 +546,9 @@ System testing was conducted during Sprint 3 (Week 5) across four categories:
 
 | Test Case | Expected Result | Actual Result | Status |
 |-----------|----------------|---------------|--------|
-| Server startup triggers feed integration | All 7 sources scraped, data inserted | 80+ regulations inserted on first run | Pass |
+| Server startup triggers feed integration | MAS source scraped, data inserted | 30+ MAS regulations inserted on first run | Pass |
 | Duplicate regulation detected | Skipped with log message | "Skipping duplicate" logged correctly | Pass |
-| Source unreachable (403/404) | Fallback data used, no crash | Fallback activated for FCA and BIS | Pass |
-| MAS API timeout | Pipeline continues with other sources | 0 API items, scraping continued | Pass |
+| Source unreachable (403/404) | Fallback data used, no crash | Fallback activated, system continued | Pass |
 | Second run with no new data | All items skipped as duplicates | 0 new insertions, all skipped | Pass |
 
 **4.3 Authentication Testing**
@@ -655,28 +660,30 @@ The left sidebar provides access to 10 views:
 
 ## 6. Conclusions
 
-The Automated Regulatory Monitoring and Compliance Management System successfully addresses the core business problem of manual regulatory tracking at Greenlink Digital Bank. The system automates the entire compliance monitoring lifecycle — from data ingestion through 7 international regulatory sources, to change detection, impact assessment, alert generation, and compliance workflow management.
+The Automated Regulatory Monitoring and Compliance Management System successfully addresses the core business problem of manual regulatory tracking at Greenlink Digital Bank. The system automates the entire compliance monitoring lifecycle — from data ingestion through MAS web scraping (Phase 1 POC), to RAG-powered change detection, LLM impact assessment, alert generation, and compliance workflow management.
 
 Key achievements:
 - Built a fully functional 9-module compliance platform with 25+ REST API endpoints
-- Implemented real-time web scraping from 7 regulatory authorities (MAS, FATF, FinCEN, ECB, FCA, BIS, HKMA) plus the MAS Official API
+- Implemented automated web scraping from MAS regulatory website with fallback data (Phase 1 POC)
+- Developed a complete RAG (Retrieval-Augmented Generation) pipeline using Chroma vector database and OpenAI text-embedding-3-small for semantic search
+- Integrated LLM-powered impact assessment (GPT-4o-mini) for intelligent regulatory analysis
+- Implemented PII detection and filtering (NRIC, phone, email, postal codes, credit cards, passports) for PDPA compliance
 - Developed a professional 10-view dashboard with login authentication, dark mode, pagination, Chart.js visualizations, CSV export, and print-friendly reports
 - Achieved clean code separation with modular route files, shared middleware, and externalized configuration
 - Deployed the database to Azure for team collaboration
+- Implemented comprehensive audit logging of all user actions and LLM interactions for MAS traceability requirements
 
 The system demonstrates that automated compliance monitoring is not only technically feasible for a Digital Wholesale Bank but is an operational necessity. By replacing manual regulatory tracking with an automated pipeline, GLDB can maintain its competitive advantage in execution speed while ensuring continuous compliance with MAS and international regulatory requirements.
 
 **Future Enhancements:**
-- Role-based access control (Admin, Compliance Officer, Internal Auditor)
-- AI-powered impact assessment using OpenAI GPT for deeper semantic analysis of regulatory text
-- LLM-powered compliance gap analysis comparing regulations against internal PMPs
-- PII detection and filtering guardrails before LLM processing
-- LLM usage audit logging (recording all prompts, responses, and timestamps for traceability)
-- SharePoint integration for automatic retrieval of latest internal Policy & Procedure Manuals
+- Role-based access control with restricted views per role (Admin, Compliance Officer, Internal Auditor)
 - Email/SMS notifications for Critical alerts
-- Session management with JWT tokens
-- Deployment to a production cloud server
+- Session management with JWT tokens and auto-logout after inactivity
+- Deployment to a production cloud server with HTTPS
 - Expansion from MAS-focused POC to full multi-regulatory coverage (FATF, FinCEN, ECB, FCA, BIS, HKMA)
+- SharePoint integration for automatic retrieval of latest internal Policy & Procedure Manuals
+- Date range filtering for reports and audit trail
+- Real-time WebSocket notifications for new alerts
 
 **Industry Partner Feedback (Meeting with Patrick, GLDB):**
 - Confirmed all 9 functional requirements are aligned with GLDB's needs

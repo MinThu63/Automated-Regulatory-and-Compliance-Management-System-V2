@@ -18,5 +18,9 @@
     "mysql2": "^3.12.0",
     "node-cron": "^4.2.1",
     "openai": "^6.37.0"
+  },
+  "devDependencies": {
+    "docx": "^9.7.1",
+    "exceljs": "^4.4.0"
   }
 }

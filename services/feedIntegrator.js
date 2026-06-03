@@ -10,9 +10,7 @@ const { assessImpactRAG, embedRegulation, embedAllExistingData } = require('./ra
 
 const MAS_SOURCE_ID = 1;
 
-// External URLs
 const MAS_SCRAPE_URL = process.env.MAS_SCRAPE_URL || 'https://www.mas.gov.sg/regulation/anti-money-laundering';
-const MAS_API_URL = process.env.MAS_API_URL || 'https://eservices.mas.gov.sg/api/action/datastore/search.json';
 
 // =============================================
 // Impact-to-Severity Mapping
@@ -231,84 +229,6 @@ function getMASFallbackData() {
 // MAS Official API
 // =============================================
 
-async function fetchMASAPI() {
-  console.log('[FeedIntegrator] Fetching from MAS Official API...');
-  var results = [];
-  var now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
-  try {
-    var exchangeRateResponse = await axios.get(MAS_API_URL, {
-      params: { resource_id: '95932927-c8bc-4e7a-b484-68a66a24edfe', limit: 5, sort: 'end_of_day desc' },
-      timeout: 15000
-    });
-    if (exchangeRateResponse.data && exchangeRateResponse.data.result && exchangeRateResponse.data.result.records) {
-      var records = exchangeRateResponse.data.result.records;
-      if (records.length > 0) {
-        var latestDate = records[0].end_of_day || now;
-        results.push({
-          source_id: MAS_SOURCE_ID,
-          title: 'MAS Official Exchange Rate Data - Daily Spot Rates (' + latestDate + ')',
-          category: 'Monetary Policy',
-          content: 'Official MAS exchange rate data. Includes USD/SGD, EUR/SGD, GBP/SGD, JPY/SGD spot rates. Data date: ' + latestDate,
-          version: 1.0,
-          published_date: now
-        });
-      }
-    }
-  } catch (err) {
-    console.error('[FeedIntegrator] MAS API exchange rate fetch failed:', err.message);
-  }
-
-  try {
-    var interestRateResponse = await axios.get(MAS_API_URL, {
-      params: { resource_id: '9a0bf149-308c-4bd2-832d-76c8e6cb47ed', limit: 5, sort: 'end_of_day desc' },
-      timeout: 15000
-    });
-    if (interestRateResponse.data && interestRateResponse.data.result && interestRateResponse.data.result.records) {
-      var intRecords = interestRateResponse.data.result.records;
-      if (intRecords.length > 0) {
-        var intDate = intRecords[0].end_of_day || now;
-        results.push({
-          source_id: MAS_SOURCE_ID,
-          title: 'MAS Official Interest Rate Data - Domestic Rates (' + intDate + ')',
-          category: 'Monetary Policy',
-          content: 'Official MAS domestic interest rate data. Includes interbank rates, prime lending rates, and fixed deposit rates. Data date: ' + intDate,
-          version: 1.0,
-          published_date: now
-        });
-      }
-    }
-  } catch (err) {
-    console.error('[FeedIntegrator] MAS API interest rate fetch failed:', err.message);
-  }
-
-  try {
-    var moneySupplyResponse = await axios.get(MAS_API_URL, {
-      params: { resource_id: '5f2b18a8-0883-4f98-962c-ab4a0f467634', limit: 3, sort: 'end_of_month desc' },
-      timeout: 15000
-    });
-    if (moneySupplyResponse.data && moneySupplyResponse.data.result && moneySupplyResponse.data.result.records) {
-      var msRecords = moneySupplyResponse.data.result.records;
-      if (msRecords.length > 0) {
-        var msDate = msRecords[0].end_of_month || now;
-        results.push({
-          source_id: MAS_SOURCE_ID,
-          title: 'MAS Money Supply Statistics - M1 and M2 Aggregates (' + msDate + ')',
-          category: 'Monetary Policy',
-          content: 'Official MAS money supply statistics. Includes M1 (narrow money) and M2 (broad money) aggregates. Data date: ' + msDate,
-          version: 1.0,
-          published_date: now
-        });
-      }
-    }
-  } catch (err) {
-    console.error('[FeedIntegrator] MAS API money supply fetch failed:', err.message);
-  }
-
-  console.log('[FeedIntegrator] MAS API returned ' + results.length + ' items');
-  return results;
-}
-
 // =============================================
 // Main Feed Runner (MAS Only — Phase 1 POC with RAG)
 // =============================================
@@ -320,16 +240,12 @@ async function runFeedIntegration() {
   console.log('[FeedIntegrator] Phase 1 POC — MAS only + RAG pipeline');
   console.log('========================================');
 
-  var [masData, masApiData] = await Promise.all([
-    scrapeMAS(),
-    fetchMASAPI()
-  ]);
+  var masData = await scrapeMAS();
 
-  var allData = masData.concat(masApiData);
-  console.log('[FeedIntegrator] Total MAS items fetched:', allData.length);
+  console.log('[FeedIntegrator] Total MAS items fetched:', masData.length);
 
-  if (allData.length > 0) {
-    var inserted = await saveToDatabase(allData);
+  if (masData.length > 0) {
+    var inserted = await saveToDatabase(masData);
     console.log('[FeedIntegrator] New MAS regulations inserted:', inserted);
   } else {
     console.log('[FeedIntegrator] No MAS data to insert');

@@ -255,3 +255,79 @@ PHASE 3 (Future)
   Data: Live internal policy documents
   Goal: Fully automated compliance pipeline
 ```
+Diagram Code
+@startuml
+top to bottom direction
+skinparam componentStyle rectangle
+skinparam defaultFontSize 12
+skinparam packageStyle rectangle
+skinparam nodesep 25
+skinparam ranksep 30
+skinparam shadowing false
+skinparam roundcorner 10
+
+title System Architecture Overview\nAutomated Regulatory Monitoring & Compliance Management
+
+' ===== EXTERNAL SOURCE =====
+cloud "MAS Regulatory Source\n(Website + API)" as MAS
+
+' ===== AUTOMATION =====
+package "Automation Layer" {
+  component "Feed Integrator\n(Scrape · Deduplicate · Cron)" as FEED
+}
+
+' ===== RAG PIPELINE =====
+package "RAG Pipeline" {
+  component "Chunking & Embedding\n(text-embedding-3-small)" as EMBED
+  component "Vector Retrieval\n(ChromaDB — cosine similarity)" as RETRIEVE
+  component "Prompt Augmentation\n(Regulation + Policy context)" as AUGMENT
+}
+
+' ===== PII GUARDRAIL =====
+package "Privacy Guardrails" {
+  component "PII Filter\n(NRIC · Phone · Email · PDPA compliance)" as PII
+}
+
+' ===== LLM =====
+package "AI Engine" {
+  component "OpenAI GPT-4o-mini\n(Impact Assessment + Gap Analysis)" as LLM
+}
+
+' ===== DATA LAYER =====
+package "Data Layer" {
+  database "MySQL (Azure)\n9 Tables" as DB
+  database "ChromaDB\n2 Vector Collections" as CHROMA
+}
+
+' ===== BACKEND =====
+package "Backend API" {
+  component "Express REST API\n(10 Routes + Audit Middleware)" as SERVER
+}
+
+' ===== USER =====
+actor "Users\n(Officer / Auditor / Admin)" as USER
+
+' ===== FRONTEND =====
+package "Frontend Dashboard" {
+  component "Vanilla JS · Bootstrap 5 · Chart.js\n(10 Views · Dark Mode · CSV Export)" as DASH
+}
+
+' ===== VERTICAL FLOW: MAS → Auto → RAG → Privacy → LLM =====
+MAS -down-> FEED : axios + cheerio
+FEED -down-> EMBED : raw regulation text
+EMBED -down-> RETRIEVE : vectors
+RETRIEVE -down-> AUGMENT : relevant chunks
+AUGMENT -down-> PII : augmented prompt
+PII -down-> LLM : <color:green>cleared</color>
+
+' ===== SIDE CONNECTIONS =====
+EMBED -right-> CHROMA : store vectors
+RETRIEVE -right-> CHROMA : query vectors
+LLM -right-> DB : assessment results
+FEED -right-> DB : regulations & alerts
+
+' ===== HORIZONTAL FLOW: MySQL → Backend → Frontend → User (above) =====
+DB -right-> SERVER : SQL queries
+SERVER -right-> DASH : JSON responses
+USER -down-> DASH : browser
+@enduml
