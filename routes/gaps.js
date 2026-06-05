@@ -8,9 +8,10 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     var [rows] = await pool.query(
-      `SELECT cg.gap_id, cg.gap_description, cg.status, r.title AS regulation_title, ip.policy_name, cg.identified_at
+      `SELECT cg.gap_id, cg.gap_description, cg.status, r.title AS regulation_title, ip.policy_name, cg.identified_at, COALESCE(r.source_url, rs.base_url) AS source_url
        FROM compliance_gaps cg JOIN regulations r ON cg.reg_id = r.reg_id
-       JOIN internal_policies ip ON cg.policy_id = ip.policy_id`
+       JOIN internal_policies ip ON cg.policy_id = ip.policy_id
+       JOIN regulatory_sources rs ON r.source_id = rs.source_id`
     );
     res.status(200).json(rows);
   } catch (err) {
@@ -38,24 +39,13 @@ router.post('/analyze', async (req, res) => {
     // Call RAG engine for gap analysis (handles retrieval + generation internally)
     var analysis = await analyzeGapRAG(reg_id, policy_id);
 
-    // Auto-create gaps in database if RAG found any
-    var createdGaps = [];
-    if (analysis.has_gaps && analysis.gaps && analysis.gaps.length > 0) {
-      for (var gap of analysis.gaps) {
-        var [insertResult] = await pool.query(
-          'INSERT INTO compliance_gaps (reg_id, policy_id, gap_description) VALUES (?, ?, ?)',
-          [reg_id, policy_id, gap.description]
-        );
-        createdGaps.push({ gap_id: insertResult.insertId, description: gap.description, severity: gap.severity, recommendation: gap.recommendation });
-      }
-      await logAudit(req.body.user_id || 1, 'RAG_GAP_ANALYSIS', 'compliance_gaps', reg_id, 'RAG identified ' + createdGaps.length + ' gaps: ' + regs[0].title + ' vs ' + policies[0].policy_name);
-    }
-
+    // Return analysis WITHOUT auto-creating gaps — let the user decide
     res.status(200).json({
       regulation: regs[0].title,
       policy: policies[0].policy_name,
-      analysis: analysis,
-      created_gaps: createdGaps
+      reg_id: reg_id,
+      policy_id: policy_id,
+      analysis: analysis
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     var [rows] = await pool.query(
-      'SELECT a.alert_id, r.title, a.severity_level, a.status FROM alerts a JOIN regulations r ON a.reg_id = r.reg_id'
+      'SELECT a.alert_id, r.title, a.severity_level, a.status, COALESCE(r.source_url, rs.base_url) AS source_url FROM alerts a JOIN regulations r ON a.reg_id = r.reg_id JOIN regulatory_sources rs ON r.source_id = rs.source_id'
     );
     res.status(200).json(rows);
   } catch (err) {

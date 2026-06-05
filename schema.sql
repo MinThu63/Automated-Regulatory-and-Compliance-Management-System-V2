@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS regulations (
     content TEXT NOT NULL,
     version DECIMAL(5,2) DEFAULT 1.0,
     published_date DATETIME,
+    source_url VARCHAR(500),
     ingested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (source_id) REFERENCES regulatory_sources(source_id) ON DELETE CASCADE
 );
@@ -113,11 +114,10 @@ INSERT IGNORE INTO users (username, email, password, role) VALUES
 ('Admin User', 'admin@gldb.com', '$2b$10$xtJXo9NyK54qbDW88jeisefWGdzzrt9IvqJBY.5DJHceoucS27Dp2', 'Admin');
 
 INSERT IGNORE INTO regulatory_sources (source_name, base_url) VALUES 
-('MAS', 'https://www.mas.gov.sg/regulation');
+('MAS', 'https://www.mas.gov.sg/regulation/notices/notice-626');
 
 INSERT IGNORE INTO regulations (source_id, title, category, content, version) VALUES 
-(1, 'Notice 626 Prevention of Money Laundering', 'AML', 'Updated CDD rules for cross-border MSME transfers.', 1.1),
-(1, 'Environmental Risk Management Guidelines', 'ESG', 'Banks must conduct scenario analysis on environmental risk.', 1.0);
+(1, 'MAS Notice 626 - Prevention of Money Laundering and Countering the Financing of Terrorism', 'AML', 'Sets out requirements for banks relating to CDD, EDD, ongoing monitoring, suspicious transaction reporting, record keeping, and wire transfer obligations.', 2.0);
 
 INSERT IGNORE INTO internal_policies (policy_name, description) VALUES 
 ('GLDB AML/CFT Compliance Policy', 'Automated eKYC and Enhanced Due Diligence (EDD) procedures for MSME onboarding, including AI-driven biometric verification, UBO screening, and shell company detection via third-party identity systems (e.g., Chekk). Mandates senior management approval for high-risk customer relationships.'),

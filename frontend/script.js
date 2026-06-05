@@ -5,7 +5,7 @@ let currentUser = null;
 let regCurrentPage = 1;
 let regTotalPages = 1;
 let regSearchQuery = '';
-const API_BASE = 'http://localhost:3000';
+const API_BASE = '';
 const ITEMS_PER_PAGE = 10;
 
 // Pagination state for all tabs
@@ -402,7 +402,7 @@ function showView(viewName) {
   });
   // Find the clicked link and make it active
   var links = document.querySelectorAll('.sidebar .nav-link');
-  var viewIndex = { alerts: 0, reports: 1, tasks: 2, gaps: 3, sources: 4, regulations: 5, changes: 6, impact: 7, policies: 8, audit: 9 };
+  var viewIndex = { alerts: 0, reports: 1, tasks: 2, gaps: 3, sources: 4, regulations: 5, changes: 6, policies: 7, audit: 8 };
   if (links[viewIndex[viewName]]) {
     links[viewIndex[viewName]].classList.add('active', 'bg-primary', 'rounded');
   }
@@ -414,7 +414,6 @@ function showView(viewName) {
   if (viewName === 'sources') { loadSources(); }
   if (viewName === 'regulations') { loadRegulations(); loadSourcesDropdown(); }
   if (viewName === 'changes') { loadChanges(); }
-  if (viewName === 'impact') { loadImpact(); }
   if (viewName === 'policies') { loadPolicies(); }
   if (viewName === 'audit') { loadAuditLogs(); loadUsersDropdown(); }
 }
@@ -473,9 +472,23 @@ function renderAlerts(alerts) {
     tdId.textContent = alert.alert_id;
     tr.appendChild(tdId);
 
-    // Regulation Title
+    // Regulation Title (clickable link to source)
     var tdTitle = document.createElement('td');
-    tdTitle.textContent = alert.title;
+    if (alert.source_url) {
+      var link = document.createElement('a');
+      link.href = alert.source_url;
+      link.textContent = alert.title;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.title = 'View original source at MAS';
+      link.style.textDecoration = 'none';
+      link.style.color = '#0d6efd';
+      link.addEventListener('mouseenter', function() { this.style.textDecoration = 'underline'; });
+      link.addEventListener('mouseleave', function() { this.style.textDecoration = 'none'; });
+      tdTitle.appendChild(link);
+    } else {
+      tdTitle.textContent = alert.title;
+    }
     tr.appendChild(tdTitle);
 
     // Severity Badge
@@ -1239,11 +1252,32 @@ async function loadGaps() {
     var tbody = document.getElementById('gapsBody');
     tbody.innerHTML = '';
 
+    // Update summary cards and progress bar
+    var openCount = 0, reviewCount = 0, remediatedCount = 0;
+    gaps.forEach(function(g) {
+      if (g.status === 'Open') openCount++;
+      else if (g.status === 'In Review') reviewCount++;
+      else if (g.status === 'Remediated') remediatedCount++;
+    });
+    var total = gaps.length || 1;
+    var remediatedPct = Math.round((remediatedCount / total) * 100);
+    var reviewPct = Math.round((reviewCount / total) * 100);
+
+    document.getElementById('gapOpenCount').textContent = openCount;
+    document.getElementById('gapReviewCount').textContent = reviewCount;
+    document.getElementById('gapRemediatedCount').textContent = remediatedCount;
+    document.getElementById('gapProgressText').textContent = remediatedCount + ' of ' + gaps.length + ' resolved (' + remediatedPct + '%)';
+    document.getElementById('gapProgressBar').style.width = remediatedPct + '%';
+    document.getElementById('gapProgressBar').textContent = remediatedPct + '%';
+    document.getElementById('gapInReviewBar').style.width = reviewPct + '%';
+    document.getElementById('gapInReviewBar').textContent = reviewPct > 0 ? reviewPct + '%' : '';
+
     // Populate regulation dropdown
     try {
       var regsResp = await fetch(API_BASE + '/api/regulations');
       if (regsResp.ok) {
-        var regs = await regsResp.json();
+        var regsData = await regsResp.json();
+        var regs = regsData.data || regsData;
         var gapRegSelect = document.getElementById('gapRegSelect');
         gapRegSelect.innerHTML = '<option value="">Select regulation...</option>';
         regs.forEach(function (r) {
@@ -1253,7 +1287,7 @@ async function loadGaps() {
           gapRegSelect.appendChild(opt);
         });
       }
-    } catch (e) { /* dropdown population failed silently */ }
+    } catch (e) { /* silent */ }
 
     // Populate policy dropdown
     try {
@@ -1269,21 +1303,51 @@ async function loadGaps() {
           gapPolicySelect.appendChild(opt);
         });
       }
-    } catch (e) { /* dropdown population failed silently */ }
+    } catch (e) { /* silent */ }
 
-    gaps.forEach(function (gap) {
+    if (gaps.length === 0) {
+      showEmpty('gapsBody', 'No compliance gaps found. Use "Analyze" to identify gaps with AI.');
+      return;
+    }
+
+    var pageData = paginateArray(gaps, gapsPage);
+
+    pageData.forEach(function (gap) {
       var tr = document.createElement('tr');
 
+      // Color row by status
+      if (gap.status === 'Open') tr.className = 'table-danger';
+      else if (gap.status === 'In Review') tr.className = 'table-warning';
+
+      // Regulation (clickable link)
       var tdReg = document.createElement('td');
-      tdReg.textContent = gap.regulation_title;
+      if (gap.source_url) {
+        var regLink = document.createElement('a');
+        regLink.href = gap.source_url;
+        regLink.textContent = gap.regulation_title;
+        regLink.target = '_blank';
+        regLink.style.color = '#0d6efd';
+        regLink.style.textDecoration = 'none';
+        regLink.addEventListener('mouseenter', function() { this.style.textDecoration = 'underline'; });
+        regLink.addEventListener('mouseleave', function() { this.style.textDecoration = 'none'; });
+        tdReg.appendChild(regLink);
+      } else {
+        tdReg.textContent = gap.regulation_title;
+      }
       tr.appendChild(tdReg);
 
+      // Policy name
       var tdPolicy = document.createElement('td');
       tdPolicy.textContent = gap.policy_name;
+      tdPolicy.style.cursor = 'help';
+      tdPolicy.title = 'Click to view policy details';
       tr.appendChild(tdPolicy);
 
+      // Gap description
       var tdDesc = document.createElement('td');
-      tdDesc.textContent = gap.gap_description;
+      tdDesc.style.maxWidth = '300px';
+      tdDesc.textContent = gap.gap_description ? (gap.gap_description.length > 100 ? gap.gap_description.substring(0, 100) + '...' : gap.gap_description) : '';
+      tdDesc.title = gap.gap_description || '';
       tr.appendChild(tdDesc);
 
       // Status dropdown
@@ -1308,10 +1372,124 @@ async function loadGaps() {
       tdDate.textContent = formatDate(gap.identified_at);
       tr.appendChild(tdDate);
 
+      // Actions column placeholder
+      var tdActions = document.createElement('td');
+      tdActions.textContent = '';
+      tr.appendChild(tdActions);
+
       tbody.appendChild(tr);
+    });
+
+    renderPagination('gapsPagination', gapsPage, gaps.length, function(page) {
+      gapsPage = page;
+      loadGaps();
     });
   } catch (err) {
     showError('Unable to load compliance gap data. Please try again later.');
+  }
+}
+
+// AI Gap Analysis
+async function analyzeGapWithAI() {
+  var regId = document.getElementById('gapRegSelect').value;
+  var policyId = document.getElementById('gapPolicySelect').value;
+
+  if (!regId || !policyId) {
+    showToast('Please select both a regulation and a policy first', 'warning');
+    return;
+  }
+
+  var resultDiv = document.getElementById('gapAIResult');
+  var contentDiv = document.getElementById('gapAIContent');
+  resultDiv.classList.remove('d-none');
+  contentDiv.innerHTML = '<strong>🔄 Analyzing with AI...</strong> (RAG pipeline: retrieving policy chunks, sending to GPT-4o-mini)';
+
+  try {
+    var response = await fetch(API_BASE + '/api/compliance-gaps/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reg_id: regId, policy_id: policyId })
+    });
+
+    if (!response.ok) {
+      var errData = await response.json();
+      throw new Error(errData.error || 'Analysis failed');
+    }
+
+    var result = await response.json();
+
+    var html = '<div class="d-flex justify-content-between align-items-start">';
+    html += '<div><strong>✅ AI Gap Analysis Complete</strong></div>';
+    html += '<button class="btn btn-sm btn-outline-secondary" onclick="clearGapAnalysis()">✕ Clear</button>';
+    html += '</div>';
+    html += '<hr class="my-2">';
+    html += '<strong>Regulation:</strong> ' + result.regulation + '<br>';
+    html += '<strong>Policy:</strong> ' + result.policy + '<br>';
+
+    if (result.analysis && result.analysis.has_gaps && result.analysis.gaps && result.analysis.gaps.length > 0) {
+      html += '<strong>Gaps Found:</strong> ' + result.analysis.gaps.length + '<br>';
+      if (result.analysis.compliance_score !== undefined) {
+        html += '<strong>Compliance Score:</strong> ' + result.analysis.compliance_score + '/100<br>';
+      }
+      html += '<div class="mt-2">';
+      result.analysis.gaps.forEach(function(g, i) {
+        html += '<div class="card card-body p-2 mb-2">';
+        html += '<div class="d-flex justify-content-between align-items-center">';
+        html += '<span>' + (i+1) + '. ' + (g.description || g) + '</span>';
+        html += '<button class="btn btn-sm btn-success ms-2" onclick="saveGapFromAI(' + i + ')">Save</button>';
+        html += '</div>';
+        if (g.severity) html += '<small class="badge bg-' + getImpactBadgeColor(g.severity) + ' mt-1">' + g.severity + '</small>';
+        if (g.recommendation) html += '<small class="text-muted d-block">Recommendation: ' + g.recommendation + '</small>';
+        html += '</div>';
+      });
+      html += '</div>';
+      if (result.analysis.recommendations && result.analysis.recommendations.length > 0) {
+        html += '<strong class="mt-2 d-block">Recommendations:</strong><ul class="mb-0">';
+        result.analysis.recommendations.forEach(function(r) { html += '<li><small>' + r + '</small></li>'; });
+        html += '</ul>';
+      }
+    } else {
+      html += '<span class="text-success">✓ No significant gaps identified. Policy appears compliant.</span>';
+    }
+
+    contentDiv.innerHTML = html;
+
+    // Store analysis result for saving individual gaps
+    window._lastGapAnalysis = result;
+
+    showToast('AI gap analysis completed', 'success');
+  } catch (err) {
+    contentDiv.innerHTML = '<strong class="text-danger">Analysis Failed:</strong> ' + err.message + '<br><small class="text-muted">Ensure Chroma is running and OpenAI API key is valid.</small><br><button class="btn btn-sm btn-outline-secondary mt-2" onclick="clearGapAnalysis()">Clear</button>';
+    showToast('Gap analysis failed: ' + err.message, 'danger');
+  }
+}
+
+function clearGapAnalysis() {
+  document.getElementById('gapAIResult').classList.add('d-none');
+  document.getElementById('gapAIContent').innerHTML = '';
+  window._lastGapAnalysis = null;
+}
+
+async function saveGapFromAI(index) {
+  var analysis = window._lastGapAnalysis;
+  if (!analysis || !analysis.analysis || !analysis.analysis.gaps || !analysis.analysis.gaps[index]) return;
+
+  var gap = analysis.analysis.gaps[index];
+  try {
+    var response = await fetch(API_BASE + '/api/compliance-gaps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reg_id: analysis.reg_id,
+        policy_id: analysis.policy_id,
+        gap_description: gap.description || gap
+      })
+    });
+    if (!response.ok) throw new Error('Failed to save gap');
+    showToast('Gap saved successfully', 'success');
+    loadGaps();
+  } catch (err) {
+    showToast('Failed to save gap: ' + err.message, 'danger');
   }
 }
 
@@ -1329,6 +1507,7 @@ async function submitGap(e) {
     });
     if (!response.ok) throw new Error('Failed to create gap');
     document.getElementById('gapForm').reset();
+    document.getElementById('gapAIResult').classList.add('d-none');
     loadGaps();
     showToast('Compliance gap created successfully', 'success');
   } catch (err) {
@@ -1346,6 +1525,7 @@ async function updateGapStatus(gapId, status) {
     });
     if (!response.ok) throw new Error('Failed to update gap status');
     loadGaps();
+    showToast('Gap status updated to ' + status, 'success');
   } catch (err) {
     showError('Failed to update gap status. Please try again.');
   }
@@ -1505,7 +1685,21 @@ async function loadRegulations() {
       var tr = document.createElement('tr');
 
       var tdTitle = document.createElement('td');
-      tdTitle.textContent = reg.title;
+      if (reg.source_url) {
+        var link = document.createElement('a');
+        link.href = reg.source_url;
+        link.textContent = reg.title;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.title = 'View original source at MAS';
+        link.style.textDecoration = 'none';
+        link.style.color = '#0d6efd';
+        link.addEventListener('mouseenter', function() { this.style.textDecoration = 'underline'; });
+        link.addEventListener('mouseleave', function() { this.style.textDecoration = 'none'; });
+        tdTitle.appendChild(link);
+      } else {
+        tdTitle.textContent = reg.title;
+      }
       tr.appendChild(tdTitle);
 
       var tdSource = document.createElement('td');
@@ -1683,6 +1877,17 @@ async function loadChanges() {
     var response = await fetch(API_BASE + '/api/regulation-changes');
     if (!response.ok) throw new Error('Server responded with status ' + response.status);
     allChangesData = await response.json();
+
+    // Update impact summary cards
+    var counts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
+    allChangesData.forEach(function(c) {
+      if (counts.hasOwnProperty(c.impact_score)) counts[c.impact_score]++;
+    });
+    document.getElementById('impactCritical').textContent = counts.Critical;
+    document.getElementById('impactHigh').textContent = counts.High;
+    document.getElementById('impactMedium').textContent = counts.Medium;
+    document.getElementById('impactLow').textContent = counts.Low;
+
     renderChangesTable();
   } catch (err) {
     showError('Unable to load regulation changes. Please try again later.');
@@ -1717,16 +1922,53 @@ function renderChangesTable() {
   pageData.forEach(function (change) {
     var tr = document.createElement('tr');
 
+    // Regulation title as clickable link
     var tdTitle = document.createElement('td');
-    tdTitle.textContent = change.regulation_title;
+    if (change.source_url) {
+      var link = document.createElement('a');
+      link.href = change.source_url;
+      link.textContent = change.regulation_title;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.title = 'View source at MAS';
+      link.style.textDecoration = 'none';
+      link.style.color = '#0d6efd';
+      link.addEventListener('mouseenter', function() { this.style.textDecoration = 'underline'; });
+      link.addEventListener('mouseleave', function() { this.style.textDecoration = 'none'; });
+      tdTitle.appendChild(link);
+    } else {
+      tdTitle.textContent = change.regulation_title;
+    }
     tr.appendChild(tdTitle);
 
+    // Previous version (clickable)
     var tdPrev = document.createElement('td');
-    tdPrev.textContent = change.previous_version;
+    if (change.source_url) {
+      var prevLink = document.createElement('a');
+      prevLink.href = change.source_url;
+      prevLink.textContent = 'v' + change.previous_version;
+      prevLink.target = '_blank';
+      prevLink.className = 'badge bg-secondary text-decoration-none';
+      prevLink.title = 'View previous version at source';
+      tdPrev.appendChild(prevLink);
+    } else {
+      tdPrev.textContent = 'v' + change.previous_version;
+    }
     tr.appendChild(tdPrev);
 
+    // New version (clickable)
     var tdNew = document.createElement('td');
-    tdNew.textContent = change.new_version;
+    if (change.source_url) {
+      var newLink = document.createElement('a');
+      newLink.href = change.source_url;
+      newLink.textContent = 'v' + change.new_version;
+      newLink.target = '_blank';
+      newLink.className = 'badge bg-primary text-decoration-none';
+      newLink.title = 'View latest version at source';
+      tdNew.appendChild(newLink);
+    } else {
+      tdNew.textContent = 'v' + change.new_version;
+    }
     tr.appendChild(tdNew);
 
     var tdImpact = document.createElement('td');
@@ -1737,7 +1979,10 @@ function renderChangesTable() {
     tr.appendChild(tdImpact);
 
     var tdDiff = document.createElement('td');
-    tdDiff.textContent = change.semantic_differences;
+    tdDiff.textContent = change.semantic_differences ? change.semantic_differences.substring(0, 100) + (change.semantic_differences.length > 100 ? '...' : '') : '';
+    tdDiff.title = change.semantic_differences || '';
+    tdDiff.style.cursor = 'help';
+    tdDiff.style.maxWidth = '250px';
     tr.appendChild(tdDiff);
 
     var tdDate = document.createElement('td');

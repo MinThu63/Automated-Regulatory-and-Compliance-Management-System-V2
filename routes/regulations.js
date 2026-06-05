@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
     var search = req.query.search || '';
 
     var countSql = 'SELECT COUNT(*) AS total FROM regulations r JOIN regulatory_sources rs ON r.source_id = rs.source_id';
-    var dataSql = `SELECT r.reg_id, rs.source_name, r.title, r.category, r.content, r.version, r.published_date, r.ingested_at
+    var dataSql = `SELECT r.reg_id, rs.source_name, r.title, r.category, r.content, r.version, r.published_date, r.ingested_at, COALESCE(r.source_url, rs.base_url) AS source_url
        FROM regulations r JOIN regulatory_sources rs ON r.source_id = rs.source_id`;
     var params = [];
 

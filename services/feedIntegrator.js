@@ -77,8 +77,8 @@ async function saveToDatabase(data) {
 
       // New regulation — insert it
       var [result] = await pool.query(
-        'INSERT INTO regulations (source_id, title, category, content, version, published_date) VALUES (?, ?, ?, ?, ?, ?)',
-        [item.source_id, item.title, item.category, item.content, item.version || 1.0, item.published_date || null]
+        'INSERT INTO regulations (source_id, title, category, content, version, published_date, source_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [item.source_id, item.title, item.category, item.content, item.version || 1.0, item.published_date || null, item.source_url || null]
       );
       var newRegId = result.insertId;
       inserted++;
@@ -133,13 +133,15 @@ async function scrapeMAS() {
       var href = $(el).attr('href');
 
       if (title && title.length > 10 && title.length < 300) {
+        var fullUrl = href ? (href.startsWith('http') ? href : 'https://www.mas.gov.sg' + href) : 'https://www.mas.gov.sg/regulation/anti-money-laundering';
         results.push({
           source_id: MAS_SOURCE_ID,
           title: title.substring(0, 255),
           category: 'AML',
           content: 'Scraped from MAS: ' + (href || '') + ' — ' + title,
           version: 1.0,
-          published_date: new Date().toISOString().slice(0, 19).replace('T', ' ')
+          published_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          source_url: fullUrl
         });
       }
     });
@@ -160,7 +162,7 @@ async function scrapeMAS() {
 }
 
 // =============================================
-// MAS Fallback Data — Notice 626 and related notices
+// MAS Fallback Data — Notice 626 (AML/CFT) Only
 // =============================================
 
 function getMASFallbackData() {
@@ -172,55 +174,44 @@ function getMASFallbackData() {
       category: 'AML',
       content: 'MAS Notice 626 sets out requirements for banks in Singapore relating to the prevention of money laundering and countering the financing of terrorism. Key areas include: (1) Customer Due Diligence (CDD) — banks must identify and verify customers, beneficial owners, and persons acting on behalf of customers before establishing business relations. (2) Enhanced Due Diligence (EDD) — required for higher-risk customers including politically exposed persons (PEPs), correspondent banking relationships, and non-face-to-face business relations. (3) Ongoing Monitoring — banks must conduct ongoing monitoring of business relations and scrutinize transactions to ensure consistency with the bank\'s knowledge of the customer. (4) Suspicious Transaction Reporting (STR) — banks must file STRs with the Suspicious Transaction Reporting Office when there are reasonable grounds to suspect money laundering or terrorism financing. (5) Record Keeping — banks must maintain records of all transactions and CDD information for at least 5 years. (6) Wire Transfer Requirements — banks must include originator and beneficiary information in wire transfers.',
       version: 2.0,
-      published_date: now
+      published_date: now,
+      source_url: 'https://www.mas.gov.sg/regulation/notices/notice-626'
     },
     {
       source_id: MAS_SOURCE_ID,
-      title: 'MAS Notice 1014 - Prevention of Money Laundering and Countering the Financing of Terrorism - Capital Markets Intermediaries',
+      title: 'MAS Notice 626 - Appendix: CDD for Correspondent Banking',
       category: 'AML',
-      content: 'MAS Notice 1014 applies to holders of capital markets services licences and sets out AML/CFT requirements including customer due diligence, ongoing monitoring, suspicious transaction reporting, and record keeping obligations specific to capital markets intermediaries.',
-      version: 1.0,
-      published_date: now
+      content: 'Appendix to Notice 626 covering enhanced CDD requirements for correspondent banking relationships. Banks must: (a) gather sufficient information about a respondent institution to understand the nature of its business, (b) determine the reputation of the institution and the quality of supervision, (c) assess AML/CFT controls of the respondent, (d) obtain senior management approval before establishing new correspondent banking relationships, (e) clearly understand the respective AML/CFT responsibilities of each institution.',
+      version: 2.0,
+      published_date: now,
+      source_url: 'https://www.mas.gov.sg/regulation/notices/notice-626'
     },
     {
       source_id: MAS_SOURCE_ID,
-      title: 'MAS Guidelines on Environmental Risk Management for Banks',
-      category: 'ESG',
-      content: 'Guidelines requiring banks to integrate environmental risk considerations into their risk management frameworks. Banks must conduct scenario analysis on environmental risk exposures, set metrics and targets for managing environmental risk, and make appropriate disclosures on environmental risk.',
-      version: 1.1,
-      published_date: now
+      title: 'MAS Notice 626 - Appendix: Ongoing Monitoring and STR Filing',
+      category: 'AML',
+      content: 'Appendix to Notice 626 on ongoing monitoring obligations. Banks must: (a) monitor transactions to detect unusual or suspicious patterns, (b) apply enhanced monitoring for higher-risk customers and PEPs, (c) review and update CDD information periodically, (d) file Suspicious Transaction Reports (STRs) with STRO when there are reasonable grounds to suspect ML/TF, (e) not tip off customers about STR filings, (f) maintain internal escalation procedures for reporting suspicious activity.',
+      version: 2.0,
+      published_date: now,
+      source_url: 'https://www.mas.gov.sg/regulation/notices/notice-626'
     },
     {
       source_id: MAS_SOURCE_ID,
-      title: 'MAS Technology Risk Management Guidelines',
-      category: 'Technology Risk',
-      content: 'Updated guidelines on cybersecurity, IT resilience, and third-party technology risk management for financial institutions regulated by MAS. Covers system availability, data protection, access controls, cyber surveillance, and incident response.',
-      version: 1.0,
-      published_date: now
+      title: 'MAS Notice 626 - Appendix: Wire Transfer and Cross-Border Requirements',
+      category: 'AML',
+      content: 'Appendix to Notice 626 on wire transfer requirements. Banks must: (a) include full originator information (name, account number, address) for all wire transfers above SGD 1,500, (b) include beneficiary information, (c) maintain originator and beneficiary information throughout the payment chain, (d) implement risk-based procedures for incoming transfers with incomplete information, (e) apply enhanced scrutiny to transfers from/to high-risk jurisdictions identified by FATF.',
+      version: 2.0,
+      published_date: now,
+      source_url: 'https://www.mas.gov.sg/regulation/notices/notice-626'
     },
     {
       source_id: MAS_SOURCE_ID,
-      title: 'MAS Notice 644 - Submission of Statistics and Returns',
-      category: 'Reporting',
-      content: 'Requirements for banks to submit statistical returns and reports to MAS on a regular basis, including capital adequacy ratios, liquidity coverage ratios, and other prudential metrics.',
-      version: 1.0,
-      published_date: now
-    },
-    {
-      source_id: MAS_SOURCE_ID,
-      title: 'MAS Notice 637 - Notice on Risk Based Capital Adequacy Requirements for Banks',
-      category: 'Capital Requirements',
-      content: 'Sets out the minimum capital adequacy requirements for banks incorporated in Singapore, including Common Equity Tier 1, Additional Tier 1, and Tier 2 capital requirements aligned with Basel III standards.',
-      version: 1.0,
-      published_date: now
-    },
-    {
-      source_id: MAS_SOURCE_ID,
-      title: 'MAS Guidelines on Individual Accountability and Conduct',
-      category: 'Governance',
-      content: 'Guidelines promoting the accountability of senior managers and strengthening oversight of material risk personnel in financial institutions. Covers fit and proper criteria, conduct standards, and accountability mapping.',
-      version: 1.0,
-      published_date: now
+      title: 'MAS Notice 626 - Appendix: Sanctions and Targeted Financial Sanctions',
+      category: 'AML',
+      content: 'Appendix to Notice 626 on sanctions obligations. Banks must: (a) screen customers and transactions against UN Security Council sanctions lists, (b) screen against MAS targeted financial sanctions lists, (c) implement real-time screening for wire transfers, (d) freeze assets without delay when a match is confirmed, (e) report any frozen assets or rejected transactions to MAS, (f) maintain sanctions screening systems with timely list updates.',
+      version: 2.0,
+      published_date: now,
+      source_url: 'https://www.mas.gov.sg/regulation/notices/notice-626'
     }
   ];
 }

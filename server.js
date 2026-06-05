@@ -22,6 +22,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve frontend static files
+app.use(express.static('frontend'));
+
 // Register routes
 app.use('/api', authRoutes);
 app.use('/api/alerts', alertRoutes);
@@ -35,7 +38,7 @@ app.use('/api/internal-policies', policyRoutes);
 app.use('/api/audit-logs', auditRoutes);
 
 // Start server
-const PORT = process.env.API_PORT || 3000;
+const PORT = process.env.PORT || process.env.API_PORT || 3000;
 
 app.listen(PORT, async () => {
   console.log('Server is running on port ' + PORT);
