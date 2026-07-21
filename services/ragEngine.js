@@ -1,11 +1,11 @@
 const OpenAI = require('openai');
-const { ChromaClient } = require('chromadb');
+const { Pinecone } = require('@pinecone-database/pinecone');
 const pool = require('../db');
 const { piiGuard } = require('./piiFilter');
 
 // =============================================
 // RAG Engine — Retrieval-Augmented Generation
-// Uses Chroma as vector database
+// Uses Pinecone as vector database (cloud-hosted)
 // Uses OpenAI for embeddings and generation
 // =============================================
 
@@ -15,34 +15,30 @@ const openai = new OpenAI({
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const EMBEDDING_MODEL = 'text-embedding-3-small';
-const CHROMA_URL = process.env.CHROMA_URL || 'http://localhost:8000';
 
-// Chroma client and collections
-var chroma = new ChromaClient({ path: CHROMA_URL });
-var regulationsCollection = null;
-var policiesCollection = null;
+// Pinecone client
+const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
+const INDEX_NAME = process.env.PINECONE_INDEX || 'gldb-compliance';
+
+var index = null;
+
+// Namespaces (like separate collections in Chroma)
+const REGULATIONS_NS = 'regulations';
+const POLICIES_NS = 'policies';
 
 // =============================================
-// Initialize Chroma Collections
+// Initialize Pinecone Connection
 // =============================================
 
-async function initChroma() {
+async function initPinecone() {
   try {
-    regulationsCollection = await chroma.getOrCreateCollection({
-      name: 'regulations',
-      metadata: { description: 'MAS regulatory documents' }
-    });
-
-    policiesCollection = await chroma.getOrCreateCollection({
-      name: 'policies',
-      metadata: { description: 'GLDB internal policies' }
-    });
-
-    console.log('[RAG] Chroma collections initialized (regulations + policies)');
+    index = pinecone.index(INDEX_NAME);
+    var stats = await index.describeIndexStats();
+    console.log('[RAG] Pinecone connected — Index:', INDEX_NAME);
+    console.log('[RAG] Vectors:', stats.totalRecordCount || 0);
     return true;
   } catch (err) {
-    console.error('[RAG] Chroma connection failed:', err.message);
-    console.error('[RAG] Make sure Chroma is running: chroma run --path ./chroma_data --port 8000');
+    console.error('[RAG] Pinecone connection failed:', err.message);
     return false;
   }
 }
@@ -94,15 +90,15 @@ async function generateEmbedding(text) {
 }
 
 // =============================================
-// 3. EMBED A REGULATION INTO CHROMA
+// 3. EMBED A REGULATION INTO PINECONE
 // =============================================
 
 async function embedRegulation(regId, title, content) {
-  if (!regulationsCollection) return;
+  if (!index) return;
+  if (!content || content.trim().length < 10) return;
 
-  console.log('[RAG] Embedding regulation:', title);
+  console.log('[RAG] Embedding regulation:', title.substring(0, 60));
 
-  // PII GUARD
   var piiCheck = await piiGuard(title + ' ' + content, 'Embedding regulation: ' + title);
   if (!piiCheck.allowed) {
     console.log('[RAG] Embedding blocked by PII filter:', piiCheck.reason);
@@ -111,43 +107,35 @@ async function embedRegulation(regId, title, content) {
 
   var fullText = title + '. ' + content;
   var chunks = chunkText(fullText);
-
-  var ids = [];
-  var documents = [];
-  var embeddings = [];
-  var metadatas = [];
+  var vectors = [];
 
   for (var i = 0; i < chunks.length; i++) {
     var embedding = await generateEmbedding(chunks[i]);
     if (embedding) {
-      ids.push('reg_' + regId + '_chunk_' + i);
-      documents.push(chunks[i]);
-      embeddings.push(embedding);
-      metadatas.push({ source_id: regId, title: title, chunk_index: i, type: 'regulation' });
+      vectors.push({
+        id: 'reg_' + regId + '_chunk_' + i,
+        values: embedding,
+        metadata: { source_id: regId, title: title, chunk_index: i, type: 'regulation', text: chunks[i] }
+      });
     }
   }
 
-  if (ids.length > 0) {
-    await regulationsCollection.upsert({
-      ids: ids,
-      documents: documents,
-      embeddings: embeddings,
-      metadatas: metadatas
-    });
-    console.log('[RAG] Stored', ids.length, 'chunks for regulation:', title);
+  if (vectors.length > 0) {
+    await index.namespace(REGULATIONS_NS).upsert({ records: vectors });
+    console.log('[RAG] Stored', vectors.length, 'chunks for regulation:', title.substring(0, 50));
   }
 }
 
 // =============================================
-// 4. EMBED A POLICY INTO CHROMA
+// 4. EMBED A POLICY INTO PINECONE
 // =============================================
 
 async function embedPolicy(policyId, policyName, description) {
-  if (!policiesCollection) return;
+  if (!index) return;
+  if (!description || description.trim().length < 10) return;
 
-  console.log('[RAG] Embedding policy:', policyName);
+  console.log('[RAG] Embedding policy:', policyName.substring(0, 60));
 
-  // PII GUARD
   var piiCheck = await piiGuard(policyName + ' ' + description, 'Embedding policy: ' + policyName);
   if (!piiCheck.allowed) {
     console.log('[RAG] Embedding blocked by PII filter:', piiCheck.reason);
@@ -156,61 +144,55 @@ async function embedPolicy(policyId, policyName, description) {
 
   var fullText = policyName + '. ' + description;
   var chunks = chunkText(fullText);
-
-  var ids = [];
-  var documents = [];
-  var embeddings = [];
-  var metadatas = [];
+  var vectors = [];
 
   for (var i = 0; i < chunks.length; i++) {
     var embedding = await generateEmbedding(chunks[i]);
     if (embedding) {
-      ids.push('pol_' + policyId + '_chunk_' + i);
-      documents.push(chunks[i]);
-      embeddings.push(embedding);
-      metadatas.push({ source_id: policyId, policy_name: policyName, chunk_index: i, type: 'policy' });
+      vectors.push({
+        id: 'pol_' + policyId + '_chunk_' + i,
+        values: embedding,
+        metadata: { source_id: policyId, policy_name: policyName, chunk_index: i, type: 'policy', text: chunks[i] }
+      });
     }
   }
 
-  if (ids.length > 0) {
-    await policiesCollection.upsert({
-      ids: ids,
-      documents: documents,
-      embeddings: embeddings,
-      metadatas: metadatas
-    });
-    console.log('[RAG] Stored', ids.length, 'chunks for policy:', policyName);
+  if (vectors.length > 0) {
+    await index.namespace(POLICIES_NS).upsert({ records: vectors });
+    console.log('[RAG] Stored', vectors.length, 'chunks for policy:', policyName.substring(0, 50));
   }
 }
 
 // =============================================
-// 5. RETRIEVE RELEVANT CHUNKS FROM CHROMA
+// 5. RETRIEVE RELEVANT CHUNKS FROM PINECONE
 // =============================================
 
 async function retrieveRelevantChunks(query, sourceType, topK = 5) {
-  var collection = sourceType === 'regulation' ? regulationsCollection : policiesCollection;
-  if (!collection) return [];
+  if (!index) return [];
 
   var queryEmbedding = await generateEmbedding(query);
   if (!queryEmbedding) return [];
 
+  var namespace = sourceType === 'regulation' ? REGULATIONS_NS : POLICIES_NS;
+
   try {
-    var results = await collection.query({
-      queryEmbeddings: [queryEmbedding],
-      nResults: topK
+    var results = await index.namespace(namespace).query({
+      vector: queryEmbedding,
+      topK: topK,
+      includeMetadata: true
     });
 
-    if (!results || !results.documents || !results.documents[0]) return [];
+    if (!results || !results.matches || results.matches.length === 0) return [];
 
-    return results.documents[0].map(function (doc, i) {
+    return results.matches.map(function(match) {
       return {
-        chunk_text: doc,
-        metadata: results.metadatas[0][i],
-        distance: results.distances ? results.distances[0][i] : null
+        chunk_text: match.metadata.text || '',
+        metadata: match.metadata,
+        score: match.score
       };
     });
   } catch (err) {
-    console.error('[RAG] Chroma query failed:', err.message);
+    console.error('[RAG] Pinecone query failed:', err.message);
     return [];
   }
 }
@@ -222,47 +204,47 @@ async function retrieveRelevantChunks(query, sourceType, topK = 5) {
 async function assessImpactRAG(item) {
   var startTime = Date.now();
 
-  // PII GUARD
   var piiCheck = await piiGuard(item.title + ' ' + item.content, 'Impact Assessment: ' + item.title);
   if (!piiCheck.allowed) {
     console.log('[RAG] Impact assessment blocked by PII filter:', piiCheck.reason);
     return 'Medium';
   }
 
-  // RETRIEVAL: Find relevant internal policies
-  var relevantPolicies = await retrieveRelevantChunks(
-    item.title + ' ' + item.content,
-    'policy',
-    3
-  );
+  var relevantPolicies = await retrieveRelevantChunks(item.title + ' ' + item.content, 'policy', 3);
 
   var policyContext = '';
   if (relevantPolicies.length > 0) {
     policyContext = '\n\nRELEVANT GLDB INTERNAL POLICIES (for context):\n' +
-      relevantPolicies.map(function (p, i) { return (i + 1) + '. ' + p.chunk_text; }).join('\n');
+      relevantPolicies.map(function(p, i) { return (i + 1) + '. ' + p.chunk_text; }).join('\n');
   }
 
-  // AUGMENTED PROMPT
-  var prompt = `You are a regulatory compliance analyst at Green Link Digital Bank (GLDB), a MAS-licensed Digital Wholesale Bank serving MSMEs.
+  var sourceLabel = item.source_id === 1 ? 'MAS (Singapore)' : item.source_id === 2 ? 'FATF (International)' : item.source_id === 3 ? 'FinCEN (US)' : item.source_id === 4 ? 'ECB (Europe)' : 'FCA (UK)';
 
-Analyze the following MAS regulation and assess its impact on GLDB's compliance operations.
+  var prompt = `You are a regulatory compliance analyst at Green Link Digital Bank (GLDB), a MAS-licensed Digital Wholesale Bank serving MSMEs in Singapore.
+
+Analyze the following regulation and assess its ACTUAL impact on GLDB's daily compliance operations. Be realistic and discriminating — not everything is high impact.
 
 REGULATION:
 Title: ${item.title}
+Source: ${sourceLabel}
 Category: ${item.category}
 Content: ${item.content}
 ${policyContext}
 
-Based on the regulation content and how it relates to GLDB's existing policies, assess the impact.
+IMPORTANT: Score realistically. Consider:
+- Is this regulation DIRECTLY applicable to a Singapore-based Digital Wholesale Bank?
+- Does it require GLDB to change its existing processes?
+- Is there a deadline or penalty attached?
+- Or is this just general guidance/information?
 
 Respond with ONLY a JSON object (no markdown, no explanation):
 {"impact_score": "Critical|High|Medium|Low", "reasoning": "one sentence explanation", "affected_areas": ["list of affected compliance areas"]}
 
-Impact scoring criteria:
-- Critical: Requires immediate action, involves penalties, enforcement actions, or mandatory changes with strict deadlines
-- High: Significant compliance risk, involves AML/CFT requirements, sanctions, or major regulatory changes affecting GLDB operations
-- Medium: Requires review and potential updates to existing procedures or guidelines
-- Low: Informational, minor updates, or general guidance with no immediate action required`;
+Impact scoring criteria (apply strictly):
+- Critical: ONLY for regulations with explicit penalties, enforcement deadlines, or license-threatening requirements directly for Singapore banks
+- High: Direct AML/CFT requirement changes that specifically affect GLDB's operations
+- Medium: Requires review — general guidance updates or regulations from non-Singapore jurisdictions
+- Low: Informational only — news articles, general publications, non-binding guidance`;
 
   try {
     var response = await openai.chat.completions.create({
@@ -274,19 +256,14 @@ Impact scoring criteria:
 
     var content = response.choices[0].message.content.trim();
     var duration = Date.now() - startTime;
-
     var parsed = JSON.parse(content);
     var impactScore = parsed.impact_score;
 
     var validScores = ['Critical', 'High', 'Medium', 'Low'];
-    if (!validScores.includes(impactScore)) {
-      impactScore = 'Medium';
-    }
+    if (!validScores.includes(impactScore)) impactScore = 'Medium';
 
     await logLLMCall('IMPACT_ASSESSMENT', prompt, content, item.title, impactScore, duration, relevantPolicies.length);
-
     console.log('[RAG] Impact assessed:', impactScore, '—', parsed.reasoning || '');
-    console.log('[RAG] Retrieved', relevantPolicies.length, 'policy chunks from Chroma');
     return impactScore;
 
   } catch (err) {
@@ -314,43 +291,31 @@ async function analyzeGapRAG(regId, policyId) {
   var regulation = regs[0];
   var policy = policies[0];
 
-  // PII GUARD
   var regPiiCheck = await piiGuard(regulation.content, 'Gap Analysis (regulation): ' + regulation.title);
   if (!regPiiCheck.allowed) {
-    return { has_gaps: false, gaps: [], summary: 'Blocked: PII detected in regulation content. ' + regPiiCheck.reason };
+    return { has_gaps: false, gaps: [], summary: 'Blocked: PII detected in regulation content.' };
   }
 
   var polPiiCheck = await piiGuard(policy.description, 'Gap Analysis (policy): ' + policy.policy_name);
   if (!polPiiCheck.allowed) {
-    return { has_gaps: false, gaps: [], summary: 'Blocked: PII detected in policy content. ' + polPiiCheck.reason };
+    return { has_gaps: false, gaps: [], summary: 'Blocked: PII detected in policy content.' };
   }
 
-  // RETRIEVAL from Chroma
-  var relevantRegChunks = await retrieveRelevantChunks(
-    policy.policy_name + ' ' + policy.description,
-    'regulation',
-    3
-  );
-
-  var relevantPolicyChunks = await retrieveRelevantChunks(
-    regulation.title + ' ' + regulation.content,
-    'policy',
-    3
-  );
+  var relevantRegChunks = await retrieveRelevantChunks(policy.policy_name + ' ' + policy.description, 'regulation', 3);
+  var relevantPolicyChunks = await retrieveRelevantChunks(regulation.title + ' ' + regulation.content, 'policy', 3);
 
   var additionalRegContext = '';
   if (relevantRegChunks.length > 0) {
     additionalRegContext = '\n\nADDITIONAL RELATED REGULATIONS:\n' +
-      relevantRegChunks.map(function (r, i) { return (i + 1) + '. ' + r.chunk_text; }).join('\n');
+      relevantRegChunks.map(function(r, i) { return (i + 1) + '. ' + r.chunk_text; }).join('\n');
   }
 
   var additionalPolicyContext = '';
   if (relevantPolicyChunks.length > 0) {
     additionalPolicyContext = '\n\nADDITIONAL RELATED POLICIES:\n' +
-      relevantPolicyChunks.map(function (p, i) { return (i + 1) + '. ' + p.chunk_text; }).join('\n');
+      relevantPolicyChunks.map(function(p, i) { return (i + 1) + '. ' + p.chunk_text; }).join('\n');
   }
 
-  // AUGMENTED PROMPT
   var prompt = `You are a regulatory compliance analyst at Green Link Digital Bank (GLDB), a MAS-licensed Digital Wholesale Bank.
 
 Compare the following MAS regulation against GLDB's internal policy and identify compliance gaps.
@@ -380,21 +345,13 @@ Respond with ONLY a JSON object (no markdown, no explanation):
 
     var content = response.choices[0].message.content.trim();
     var duration = Date.now() - startTime;
-
     var parsed = JSON.parse(content);
 
-    await logLLMCall(
-      'GAP_ANALYSIS',
-      prompt,
-      content,
-      regulation.title + ' vs ' + policy.policy_name,
+    await logLLMCall('GAP_ANALYSIS', prompt, content, regulation.title + ' vs ' + policy.policy_name,
       parsed.has_gaps ? 'Gaps Found (' + (parsed.gaps ? parsed.gaps.length : 0) + ')' : 'No Gaps',
-      duration,
-      relevantRegChunks.length + relevantPolicyChunks.length
-    );
+      duration, relevantRegChunks.length + relevantPolicyChunks.length);
 
     console.log('[RAG] Gap analysis complete:', parsed.has_gaps ? (parsed.gaps ? parsed.gaps.length : 0) + ' gaps found' : 'No gaps');
-    console.log('[RAG] Retrieved', relevantRegChunks.length + relevantPolicyChunks.length, 'chunks from Chroma');
     return parsed;
 
   } catch (err) {
@@ -413,24 +370,18 @@ async function logLLMCall(actionType, inputPrompt, outputResponse, targetDescrip
   try {
     await pool.query(
       'INSERT INTO audit_logs (user_id, action_type, target_table, target_id, description) VALUES (?, ?, ?, ?, ?)',
-      [
-        1,
-        'LLM_' + actionType,
-        'regulations',
-        0,
-        JSON.stringify({
-          model: OPENAI_MODEL,
-          embedding_model: EMBEDDING_MODEL,
-          vector_db: 'Chroma',
-          input: inputPrompt.substring(0, 1500),
-          output: outputResponse.substring(0, 1500),
-          target: targetDescription,
-          result: result,
-          chunks_retrieved: chunksRetrieved,
-          duration_ms: durationMs,
-          timestamp: new Date().toISOString()
-        })
-      ]
+      [1, 'LLM_' + actionType, 'regulations', 0, JSON.stringify({
+        model: OPENAI_MODEL,
+        embedding_model: EMBEDDING_MODEL,
+        vector_db: 'Pinecone',
+        input: inputPrompt.substring(0, 1500),
+        output: outputResponse.substring(0, 1500),
+        target: targetDescription,
+        result: result,
+        chunks_retrieved: chunksRetrieved,
+        duration_ms: durationMs,
+        timestamp: new Date().toISOString()
+      })]
     );
   } catch (err) {
     console.error('[RAG Audit] Failed to log:', err.message);
@@ -442,27 +393,27 @@ async function logLLMCall(actionType, inputPrompt, outputResponse, targetDescrip
 // =============================================
 
 async function embedAllExistingData() {
-  var chromaReady = await initChroma();
-  if (!chromaReady) {
-    console.error('[RAG] Cannot embed data — Chroma is not running');
+  var ready = await initPinecone();
+  if (!ready) {
+    console.error('[RAG] Cannot embed data — Pinecone not connected');
     return;
   }
 
-  console.log('[RAG] Embedding all existing regulations and policies into Chroma...');
+  console.log('[RAG] Embedding all existing regulations and policies into Pinecone...');
 
   var [regulations] = await pool.query('SELECT reg_id, title, content FROM regulations');
   console.log('[RAG] Found', regulations.length, 'regulations to embed');
   for (var reg of regulations) {
-    await embedRegulation(reg.reg_id, reg.title, reg.content);
+    try { await embedRegulation(reg.reg_id, reg.title, reg.content); } catch (e) { /* skip */ }
   }
 
   var [policies] = await pool.query('SELECT policy_id, policy_name, description FROM internal_policies');
   console.log('[RAG] Found', policies.length, 'policies to embed');
   for (var pol of policies) {
-    await embedPolicy(pol.policy_id, pol.policy_name, pol.description);
+    try { await embedPolicy(pol.policy_id, pol.policy_name, pol.description); } catch (e) { /* skip */ }
   }
 
-  console.log('[RAG] Embedding complete. Chroma vector store ready.');
+  console.log('[RAG] Embedding complete. Pinecone vector store ready.');
 }
 
 // =============================================
@@ -470,7 +421,7 @@ async function embedAllExistingData() {
 // =============================================
 
 module.exports = {
-  initChroma,
+  initPinecone,
   chunkText,
   generateEmbedding,
   embedRegulation,

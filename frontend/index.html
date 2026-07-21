@@ -53,11 +53,8 @@
   <nav class="navbar navbar-expand-lg bg-dark navbar-dark sticky-top shadow-sm">
     <div class="container-fluid">
       <!-- GLDB Brand -->
-      <a class="navbar-brand d-flex align-items-center" href="#">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="#4ade80" class="me-2" viewBox="0 0 16 16">
-          <path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.118a1 1 0 0 0 .101.025 1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"/>
-          <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
-        </svg>
+      <a class="navbar-brand d-flex align-items-center" href="#" onclick="showHomePage(); return false;">
+        <img src="/assets/image.png" alt="GLDB Logo" height="36" class="me-2">
         <div>
           <span class="fw-bold" style="font-size: 1.1rem;">GLDB</span>
           <span class="d-none d-md-inline text-white-50 ms-2" style="font-size: 0.8rem;">Compliance Portal</span>
@@ -76,6 +73,7 @@
       <!-- Right Side Controls -->
       <div class="d-flex align-items-center gap-2">
         <span class="last-synced d-none d-md-inline" id="lastSyncedTime"></span>
+        <button class="btn btn-outline-light btn-sm" onclick="toggleSidebar()" title="Toggle Sidebar" id="sidebarToggleBtn">☰ Menu</button>
         <button class="btn btn-outline-light btn-sm" id="darkModeBtn" onclick="toggleDarkMode()" title="Toggle Dark Mode">🌙</button>
         <span class="user-badge d-none d-md-inline" id="headerUserBadge"></span>
         <button class="btn btn-outline-light btn-sm d-none" id="logoutBtn" onclick="logout()">Logout</button>
@@ -135,7 +133,7 @@
             <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
             <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
           </svg>
-          Changes & Impact
+          Changes &amp; Impact
         </a>
         <a class="nav-link text-white" href="#" onclick="showView('policies'); return false;">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -160,7 +158,44 @@
       <!-- Error Message -->
       <div id="errorMsg" class="alert alert-danger d-none" role="alert"></div>
 
-      <!-- Welcome Banner -->
+      <!-- HOME PAGE (shown after login) -->
+      <div id="view-home">
+        <div class="d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 150px);">
+          <div class="text-center" style="max-width: 600px;">
+            <img src="/assets/image.png" alt="GLDB Logo" height="80" class="mb-4">
+            <h2 class="fw-bold mb-2">Green Link Digital Bank</h2>
+            <p class="text-muted mb-1">Automated Regulatory Monitoring &amp; Compliance Management System</p>
+            <p class="text-muted small mb-4">MAS-Licensed Digital Wholesale Bank • Singapore</p>
+
+            <div class="card shadow-sm mb-4">
+              <div class="card-body py-4">
+                <div class="row g-3 text-center">
+                  <div class="col-4">
+                    <h4 class="fw-bold text-primary mb-0" id="homeAlertCount">—</h4>
+                    <small class="text-muted">Alerts</small>
+                  </div>
+                  <div class="col-4">
+                    <h4 class="fw-bold text-danger mb-0" id="homeGapCount">—</h4>
+                    <small class="text-muted">Open Gaps</small>
+                  </div>
+                  <div class="col-4">
+                    <h4 class="fw-bold text-warning mb-0" id="homeTaskCount">—</h4>
+                    <small class="text-muted">Pending Tasks</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-lg px-5 py-3 fw-semibold" onclick="enterDashboard()">
+              Go to Dashboard →
+            </button>
+
+            <p class="text-muted small mt-4">Powered by 7 autonomous AI agents monitoring 5 regulatory sources 24/7</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Welcome Banner (legacy, hidden) -->
       <div id="welcomeBanner" class="welcome-banner d-none">
         <h5 id="welcomeText">Welcome back!</h5>
         <p id="welcomeSummary">Loading your compliance overview...</p>
@@ -250,30 +285,34 @@
           </div>
         </div>
 
-        <!-- Filter Controls -->
+        <!-- Filter Controls + Bulk Actions -->
         <div class="card shadow-sm mb-4">
-          <div class="card-body">
-            <div class="row g-3 align-items-end">
-              <div class="col-md-4">
-                <label for="filterSeverity" class="form-label fw-semibold text-secondary">Severity Level</label>
-                <select id="filterSeverity" class="form-select">
-                  <option value="">All</option>
-                  <option value="Immediate Action Required">Immediate Action Required</option>
-                  <option value="Review Recommended">Review Recommended</option>
-                  <option value="Informational">Informational</option>
+          <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-3">
+                <select id="filterSeverity" class="form-select form-select-sm">
+                  <option value="">All Severities</option>
+                  <option value="Immediate Action Required">🔴 Immediate Action Required</option>
+                  <option value="Review Recommended">🟡 Review Recommended</option>
+                  <option value="Informational">🔵 Informational</option>
                 </select>
               </div>
-              <div class="col-md-4">
-                <label for="filterStatus" class="form-label fw-semibold text-secondary">Status</label>
-                <select id="filterStatus" class="form-select">
-                  <option value="">All</option>
+              <div class="col-md-2">
+                <select id="filterStatus" class="form-select form-select-sm">
+                  <option value="">All Statuses</option>
                   <option value="Unread">Unread</option>
                   <option value="Read">Read</option>
                   <option value="Dismissed">Dismissed</option>
                 </select>
               </div>
-              <div class="col-md-4 d-flex align-items-end">
-                <button class="btn btn-outline-success btn-sm" onclick="exportTableCSV('alerts')">📥 Export CSV</button>
+              <div class="col-md-4 d-flex gap-1">
+                <button class="btn btn-outline-secondary btn-sm" onclick="bulkAlertAction('Read')">✓ Mark All Read</button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="bulkAlertAction('Dismissed', 'Informational')">Dismiss Info</button>
+                <button class="btn btn-outline-success btn-sm" onclick="exportTableCSV('alerts')">📥 CSV</button>
+              </div>
+              <div class="col-md-3 text-end">
+                <button class="btn btn-outline-danger btn-sm" onclick="sendTestEmail()">📧 Send Test Alert Email</button>
+                <span class="badge bg-success ms-1" style="font-size:0.65rem;">Email active</span>
               </div>
             </div>
           </div>
@@ -282,14 +321,15 @@
         <!-- Alerts Table -->
         <div class="card shadow-sm">
           <div class="card-body p-0">
-            <table class="table table-striped table-hover mb-0">
-              <thead class="table-light">
+            <table class="table table-hover mb-0" style="font-size:0.85rem;">
+              <thead class="table-dark">
                 <tr>
-                  <th>Alert ID</th>
-                  <th>Regulation Title</th>
-                  <th>Severity Level</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th style="width:30%">Regulation</th>
+                  <th style="width:15%">Severity</th>
+                  <th style="width:15%">Department</th>
+                  <th style="width:10%">Detected</th>
+                  <th style="width:10%">Status</th>
+                  <th style="width:20%">Actions</th>
                 </tr>
               </thead>
               <tbody id="alertsBody"></tbody>
@@ -306,168 +346,143 @@
 
         <!-- Report Header with Print Button -->
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4 class="mb-0">Reports & Analytics</h4>
+          <h4 class="mb-0">Reports &amp; Analytics</h4>
           <button class="btn btn-outline-primary btn-sm" onclick="printReport()">🖨️ Print Report</button>
         </div>
 
         <!-- Report Tabs Navigation -->
         <ul class="nav nav-tabs mb-4" role="tablist">
           <li class="nav-item">
-            <a class="nav-link active" href="#" onclick="showReportTab('overview'); return false;" id="reportTab-overview">Overview</a>
+            <a class="nav-link active" href="#" onclick="showReportTab('changes'); return false;" id="reportTab-changes">Regulatory Changes</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#" onclick="showReportTab('trends'); return false;" id="reportTab-trends">Trends & Timeline</a>
+            <a class="nav-link" href="#" onclick="showReportTab('gaps'); return false;" id="reportTab-gaps">Gap Analysis</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#" onclick="showReportTab('categories'); return false;" id="reportTab-categories">Categories & Impact</a>
+            <a class="nav-link" href="#" onclick="showReportTab('tasks'); return false;" id="reportTab-tasks">Tasks & Remediation</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#" onclick="showReportTab('performance'); return false;" id="reportTab-performance">Performance</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#" onclick="showReportTab('status'); return false;" id="reportTab-status">Compliance Status</a>
+            <a class="nav-link" href="#" onclick="showReportTab('posture'); return false;" id="reportTab-posture">Compliance Posture</a>
           </li>
         </ul>
 
-        <!-- Report Tab: Overview (Page 1) -->
-        <div id="reportPage-overview">
+        <!-- Tab 1: Regulatory Changes -->
+        <div id="reportPage-changes">
+          <!-- KPI Cards -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-3"><div class="card bg-primary text-white shadow-sm"><div class="card-body text-center py-3"><small class="text-white-50">Total Changes</small><h3 class="mb-0" id="rptTotalChanges">0</h3></div></div></div>
+            <div class="col-md-3"><div class="card bg-danger text-white shadow-sm"><div class="card-body text-center py-3"><small class="text-white-50">Critical/High</small><h3 class="mb-0" id="rptCritHighCount">0</h3></div></div></div>
+            <div class="col-md-3"><div class="card bg-dark text-white shadow-sm"><div class="card-body text-center py-3"><small class="text-white-50">⚠️ Penalty-Linked</small><h3 class="mb-0" id="rptPenaltyCount">0</h3></div></div></div>
+            <div class="col-md-3"><div class="card bg-info text-white shadow-sm"><div class="card-body text-center py-3"><small class="text-white-50">Sources Monitored</small><h3 class="mb-0">5</h3></div></div></div>
+          </div>
           <div class="row g-4 mb-4">
             <div class="col-md-6">
-              <h5 class="mb-3">Alert Severity Distribution</h5>
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <canvas id="severityPieChart" height="250"></canvas>
-                </div>
-              </div>
+              <h6 class="fw-semibold">Impact Distribution</h6>
+              <div class="card shadow-sm"><div class="card-body"><canvas id="rptImpactDoughnut" height="220"></canvas></div></div>
             </div>
             <div class="col-md-6">
-              <h5 class="mb-3">Regulatory Source Activity</h5>
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <canvas id="sourceActivityChart" height="250"></canvas>
-                </div>
-              </div>
+              <h6 class="fw-semibold">Changes by Category</h6>
+              <div class="card shadow-sm"><div class="card-body"><canvas id="rptCategoryBar" height="220"></canvas></div></div>
             </div>
           </div>
           <div class="row g-4">
-            <div class="col-md-6">
-              <h5 class="mb-3">Task Status Overview</h5>
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <canvas id="taskStatusChart" height="250"></canvas>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <h5 class="mb-3">Compliance Gap Resolution</h5>
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <canvas id="gapResolutionChart" height="250"></canvas>
-                </div>
-              </div>
+            <div class="col-md-12">
+              <h6 class="fw-semibold">Changes Detected Over Time</h6>
+              <div class="card shadow-sm"><div class="card-body"><canvas id="rptChangesTimeline" height="100"></canvas></div></div>
             </div>
           </div>
         </div>
 
-        <!-- Report Tab: Trends (Page 2) -->
-        <div id="reportPage-trends" class="d-none">
-          <h5 class="mb-3">Alert Trends Over Time</h5>
-          <div class="card shadow-sm mb-4">
-            <div class="card-body">
-              <canvas id="trendChart" height="120"></canvas>
-            </div>
+        <!-- Tab 2: Gap Analysis -->
+        <div id="reportPage-gaps" class="d-none">
+          <div class="row g-3 mb-4">
+            <div class="col-md-3"><div class="card bg-danger text-white shadow-sm"><div class="card-body text-center py-3"><small class="text-white-50">Open Gaps</small><h3 class="mb-0" id="rptGapsOpen">0</h3></div></div></div>
+            <div class="col-md-3"><div class="card bg-warning text-dark shadow-sm"><div class="card-body text-center py-3"><small class="opacity-75">In Review</small><h3 class="mb-0" id="rptGapsReview">0</h3></div></div></div>
+            <div class="col-md-3"><div class="card bg-success text-white shadow-sm"><div class="card-body text-center py-3"><small class="text-white-50">Remediated</small><h3 class="mb-0" id="rptGapsRemediated">0</h3></div></div></div>
+            <div class="col-md-3"><div class="card bg-primary text-white shadow-sm"><div class="card-body text-center py-3"><small class="text-white-50">Resolution Rate</small><h3 class="mb-0" id="rptGapsResRate">0%</h3></div></div></div>
           </div>
-          <h5 class="mb-3 mt-4">Task Deadline Burndown</h5>
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <canvas id="taskDeadlineChart" height="150"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Report Tab: Categories & Impact (Page 3) -->
-        <div id="reportPage-categories" class="d-none">
           <div class="row g-4 mb-4">
             <div class="col-md-6">
-              <h5 class="mb-3">Regulation Changes by Category</h5>
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <canvas id="categoryBarChart" height="250"></canvas>
+              <h6 class="fw-semibold">Gap Type Distribution</h6>
+              <div class="card shadow-sm"><div class="card-body"><canvas id="rptGapTypePie" height="220"></canvas></div></div>
+            </div>
+            <div class="col-md-6">
+              <h6 class="fw-semibold">Gaps by Policy</h6>
+              <div class="card shadow-sm"><div class="card-body"><canvas id="rptGapsByPolicy" height="220"></canvas></div></div>
+            </div>
+          </div>
+          <div class="row g-4">
+            <div class="col-md-12">
+              <h6 class="fw-semibold">Gap Status Breakdown</h6>
+              <div class="card shadow-sm"><div class="card-body"><canvas id="rptGapStatusBar" height="100"></canvas></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Tasks & Remediation -->
+        <div id="reportPage-tasks" class="d-none">
+          <div class="row g-3 mb-4">
+            <div class="col-md-3"><div class="card bg-secondary text-white shadow-sm"><div class="card-body text-center py-3"><small class="text-white-50">Total Tasks</small><h3 class="mb-0" id="rptTasksTotal">0</h3></div></div></div>
+            <div class="col-md-3"><div class="card bg-warning text-dark shadow-sm"><div class="card-body text-center py-3"><small class="opacity-75">Pending</small><h3 class="mb-0" id="rptTasksPending">0</h3></div></div></div>
+            <div class="col-md-3"><div class="card bg-primary text-white shadow-sm"><div class="card-body text-center py-3"><small class="text-white-50">In Progress</small><h3 class="mb-0" id="rptTasksProgress">0</h3></div></div></div>
+            <div class="col-md-3"><div class="card bg-success text-white shadow-sm"><div class="card-body text-center py-3"><small class="text-white-50">Completed</small><h3 class="mb-0" id="rptTasksCompleted">0</h3></div></div></div>
+          </div>
+          <div class="row g-4 mb-4">
+            <div class="col-md-6">
+              <h6 class="fw-semibold">Task Status</h6>
+              <div class="card shadow-sm"><div class="card-body"><canvas id="rptTaskStatusPie" height="220"></canvas></div></div>
+            </div>
+            <div class="col-md-6">
+              <h6 class="fw-semibold">Tasks by Department</h6>
+              <div class="card shadow-sm"><div class="card-body"><canvas id="rptTasksByDept" height="220"></canvas></div></div>
+            </div>
+          </div>
+          <div class="row g-4">
+            <div class="col-md-12">
+              <h6 class="fw-semibold">Task Deadline Burndown</h6>
+              <div class="card shadow-sm"><div class="card-body"><canvas id="rptTaskBurndown" height="100"></canvas></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Compliance Posture -->
+        <div id="reportPage-posture" class="d-none">
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <div class="card shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                  <small class="text-uppercase text-secondary fw-bold d-block mb-2">Overall Compliance Score</small>
+                  <h1 class="display-4 fw-bold mb-0" id="rptComplianceScore" style="color: #198754;">—</h1>
+                  <small class="text-muted">Based on gap remediation rate</small>
                 </div>
               </div>
             </div>
-            <div class="col-md-6">
-              <h5 class="mb-3">Impact Score Distribution</h5>
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <canvas id="impactDoughnutChart" height="250"></canvas>
+            <div class="col-md-4">
+              <div class="card shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                  <small class="text-uppercase text-secondary fw-bold d-block mb-2">Regulations Monitored</small>
+                  <h1 class="display-4 fw-bold mb-0 text-primary" id="rptRegsMonitored">0</h1>
+                  <small class="text-muted">Across 5 sources</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                  <small class="text-uppercase text-secondary fw-bold d-block mb-2">Policies Maintained</small>
+                  <h1 class="display-4 fw-bold mb-0 text-info" id="rptPoliciesCount">0</h1>
+                  <small class="text-muted">Internal knowledge base</small>
                 </div>
               </div>
             </div>
           </div>
-          <h5 class="mb-3 mt-4">Category Breakdown Table</h5>
+          <h6 class="fw-semibold mt-4 mb-3">Policy Coverage Heatmap — Gaps per Policy</h6>
           <div class="card shadow-sm">
             <div class="card-body p-0">
-              <table class="table table-striped table-hover mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Category</th>
-                    <th>Change Count</th>
-                  </tr>
-                </thead>
-                <tbody id="categoriesBody"></tbody>
+              <table class="table table-sm table-hover mb-0" style="font-size:0.8rem;">
+                <thead class="table-dark"><tr><th>Policy</th><th class="text-center">Open</th><th class="text-center">In Review</th><th class="text-center">Remediated</th><th class="text-center">Total</th></tr></thead>
+                <tbody id="rptPolicyHeatmap"></tbody>
               </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Report Tab: Performance (Page 4) -->
-        <div id="reportPage-performance" class="d-none">
-          <div class="row g-4 mb-4">
-            <div class="col-md-12">
-              <h5 class="mb-3">Alert Response Rate</h5>
-              <div class="card shadow-sm">
-                <div class="card-body">
-                  <canvas id="responseTimeChart" height="120"></canvas>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row g-4">
-            <div class="col-md-6">
-              <h5 class="mb-3">Response Metrics</h5>
-              <div class="card shadow-sm">
-                <div class="card-body" id="responseMetrics">
-                  <p class="text-muted">Loading metrics...</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <h5 class="mb-3">Source Activity Summary</h5>
-              <div class="card shadow-sm">
-                <div class="card-body p-0">
-                  <table class="table table-striped table-hover mb-0">
-                    <thead class="table-light">
-                      <tr>
-                        <th>Source</th>
-                        <th>Regulations</th>
-                        <th>Changes</th>
-                      </tr>
-                    </thead>
-                    <tbody id="sourceActivityBody"></tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Report Tab: Compliance Status (Page 5) -->
-        <div id="reportPage-status" class="d-none">
-          <h5 class="mb-3">Compliance Status</h5>
-          <div class="card shadow-sm mb-4">
-            <div class="card-body" id="complianceStatus">
-              <p class="text-muted">Loading compliance status...</p>
             </div>
           </div>
         </div>
@@ -494,9 +509,16 @@
                   <input type="text" class="form-control" id="taskDescInput" placeholder="Task description">
                 </div>
                 <div class="col-md-2">
-                  <label for="taskUserSelect" class="form-label fw-semibold text-secondary">Assignee</label>
-                  <select class="form-select" id="taskUserSelect" required>
-                    <option value="">Select user...</option>
+                  <label for="taskDeptSelect" class="form-label fw-semibold text-secondary">Department</label>
+                  <select class="form-select" id="taskDeptSelect" required>
+                    <option value="">Select department...</option>
+                    <option value="Compliance Operations">Compliance Operations</option>
+                    <option value="Risk Management">Risk Management</option>
+                    <option value="IT Security">IT Security</option>
+                    <option value="Legal & Compliance">Legal & Compliance</option>
+                    <option value="Data Protection Office">Data Protection Office</option>
+                    <option value="ESG & Green Finance">ESG & Green Finance</option>
+                    <option value="Board Secretariat">Board Secretariat</option>
                   </select>
                 </div>
                 <div class="col-md-2">
@@ -523,8 +545,7 @@
               <thead class="table-light">
                 <tr>
                   <th>Title</th>
-                  <th>Description</th>
-                  <th>Assignee</th>
+                  <th>Department</th>
                   <th>Deadline</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -587,64 +608,99 @@
           </div>
         </div>
 
-        <!-- Add Gap Form + AI Analyze -->
+        <!-- Gap Filters -->
         <div class="card shadow-sm mb-4">
-          <div class="card-header bg-white fw-semibold">Add New Gap / AI Gap Analysis</div>
+          <div class="card-header bg-white fw-semibold">Filter Gaps</div>
           <div class="card-body">
-            <form id="gapForm">
-              <div class="row g-3 align-items-end">
-                <div class="col-md-3">
-                  <label for="gapRegSelect" class="form-label fw-semibold text-secondary">Regulation</label>
-                  <select class="form-select" id="gapRegSelect" required>
-                    <option value="">Select regulation...</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label for="gapPolicySelect" class="form-label fw-semibold text-secondary">Policy</label>
-                  <select class="form-select" id="gapPolicySelect" required>
-                    <option value="">Select policy...</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label for="gapDescInput" class="form-label fw-semibold text-secondary">Gap Description</label>
-                  <textarea class="form-control" id="gapDescInput" rows="1" placeholder="Describe the gap or click Analyze..." required></textarea>
-                </div>
-                <div class="col-md-1">
-                  <button type="submit" class="btn btn-primary w-100" title="Add manually">Add</button>
-                </div>
-                <div class="col-md-2">
-                  <button type="button" class="btn btn-outline-success w-100" onclick="analyzeGapWithAI()" title="Use AI to identify gaps">
-                    🤖 Analyze
-                  </button>
-                </div>
+            <div class="row g-3 align-items-end">
+              <div class="col-md-4">
+                <label for="gapStatusFilter" class="form-label fw-semibold text-secondary">Status</label>
+                <select class="form-select" id="gapStatusFilter" onchange="loadGaps()">
+                  <option value="">All</option>
+                  <option value="Open">Open</option>
+                  <option value="In Review">In Review</option>
+                  <option value="Remediated">Remediated</option>
+                </select>
               </div>
-            </form>
-            <div id="gapAIResult" class="mt-3 d-none">
-              <div class="alert alert-info mb-0" id="gapAIContent">
-                <strong>AI Analysis:</strong> <span id="gapAIText"></span>
+              <div class="col-md-4">
+                <label for="gapSeverityFilter" class="form-label fw-semibold text-secondary">Severity</label>
+                <select class="form-select" id="gapSeverityFilter" onchange="loadGaps()">
+                  <option value="">All</option>
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label for="gapTypeFilter" class="form-label fw-semibold text-secondary">Gap Type</label>
+                <select class="form-select" id="gapTypeFilter" onchange="loadGaps()">
+                  <option value="">All</option>
+                  <option value="Missing Procedure">📋 Missing Procedure</option>
+                  <option value="Outdated Procedure">🕒 Outdated Procedure</option>
+                  <option value="Insufficient Detail">📝 Insufficient Detail</option>
+                  <option value="Missing Control">⚙️ Missing Control</option>
+                  <option value="Non-Compliant Threshold">📊 Non-Compliant Threshold</option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-3 align-items-end mt-2">
+              <div class="col-md-4">
+                <button class="btn btn-outline-secondary" onclick="document.getElementById('gapStatusFilter').value=''; document.getElementById('gapSeverityFilter').value=''; document.getElementById('gapTypeFilter').value=''; loadGaps();">Clear Filters</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Gaps Table -->
-        <div class="card shadow-sm">
-          <div class="card-body p-0">
-            <table class="table table-striped table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Regulation</th>
-                  <th>Policy</th>
-                  <th>Gap Description</th>
-                  <th>Status</th>
-                  <th>Identified</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="gapsBody"></tbody>
-            </table>
+        <!-- Gaps Cards Container -->
+        <div id="gapsContainer" class="row g-3"></div>
+        <div class="mt-3" id="gapsPagination"></div>
+
+        <!-- Link Gap to Task Modal -->
+        <div class="modal fade" id="linkGapTaskModal" tabindex="-1" aria-labelledby="linkGapTaskModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="linkGapTaskModalLabel">Create Remediation Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div class="alert alert-info py-2 mb-3" id="linkGapInfo"></div>
+                <form id="linkGapTaskForm">
+                  <input type="hidden" id="linkGapId">
+                  <div class="mb-3">
+                    <label for="linkTaskTitle" class="form-label fw-semibold">Task Title</label>
+                    <input type="text" class="form-control" id="linkTaskTitle" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="linkTaskDesc" class="form-label fw-semibold">Description</label>
+                    <textarea class="form-control" id="linkTaskDesc" rows="3"></textarea>
+                  </div>
+                  <div class="mb-3">
+                    <label for="linkTaskDepartment" class="form-label fw-semibold">Department</label>
+                    <select class="form-select" id="linkTaskDepartment" required>
+                      <option value="">Select department...</option>
+                      <option value="Compliance Operations">Compliance Operations</option>
+                      <option value="Risk Management">Risk Management</option>
+                      <option value="IT Security">IT Security</option>
+                      <option value="Legal & Compliance">Legal & Compliance</option>
+                      <option value="Data Protection Office">Data Protection Office</option>
+                      <option value="ESG & Green Finance">ESG & Green Finance</option>
+                      <option value="Board Secretariat">Board Secretariat</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label for="linkTaskDeadline" class="form-label fw-semibold">Deadline</label>
+                    <input type="date" class="form-control" id="linkTaskDeadline" required>
+                  </div>
+                </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitLinkedTask()">Create Task</button>
+              </div>
+            </div>
           </div>
-          <div class="card-footer bg-white" id="gapsPagination"></div>
         </div>
 
       </div>
@@ -724,57 +780,247 @@
       <!-- ==================== REGULATIONS VIEW ==================== -->
       <div id="view-regulations" class="d-none">
 
-        <h4 class="mb-3">Regulations Knowledge Base</h4>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="mb-0">Regulations Knowledge Base</h4>
+          <button class="btn btn-outline-success btn-sm" onclick="exportTableCSV('regulations')">📥 Export Knowledge Base</button>
+        </div>
+        <p class="text-muted small mb-3">All regulations ingested from 5 regulatory sources. Click any title to view the official source.</p>
 
-        <!-- Search Bar -->
+        <!-- Filters Bar -->
         <div class="card shadow-sm mb-3">
           <div class="card-body py-2">
-            <div class="input-group">
-              <input type="text" class="form-control" id="regSearchInput" placeholder="Search regulations by title or category...">
-              <button class="btn btn-primary" onclick="searchRegulations()">Search</button>
-              <button class="btn btn-outline-secondary" onclick="clearRegSearch()">Clear</button>
+            <div class="row g-2 align-items-center">
+              <div class="col-md-4">
+                <input type="text" class="form-control form-control-sm" id="regSearchInput" placeholder="Search by title or keyword…" oninput="searchRegulations()">
+              </div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" id="regCategoryFilter" onchange="searchRegulations()">
+                  <option value="">All Categories</option>
+                  <option value="AML">AML</option>
+                  <option value="KYC">KYC</option>
+                  <option value="Banking Supervision">Banking Supervision</option>
+                  <option value="Cyber">Cybersecurity</option>
+                  <option value="Data Privacy">Data Privacy</option>
+                  <option value="ESG">ESG</option>
+                  <option value="Financial Conduct">Financial Conduct</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" id="regSourceFilter" onchange="searchRegulations()">
+                  <option value="">All Sources</option>
+                  <option value="MAS">MAS</option>
+                  <option value="FATF">FATF</option>
+                  <option value="FinCEN">FinCEN</option>
+                  <option value="ECB">ECB</option>
+                  <option value="FCA">FCA</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" id="regStatusFilter" onchange="searchRegulations()">
+                  <option value="">All Statuses</option>
+                  <option value="assessed">✅ Assessed</option>
+                  <option value="pending">⏳ Pending Assessment</option>
+                </select>
+              </div>
+              <div class="col-md-2 text-end">
+                <span class="badge bg-primary" id="regTotalBadge">0 regulations</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Add Regulation Form -->
-        <div class="card shadow-sm mb-4">
-          <div class="card-body">
-            <form id="regulationForm">
-              <div class="row g-3">
-                <div class="col-md-4">
-                  <label for="regSourceSelect" class="form-label fw-semibold text-secondary">Source</label>
-                  <select class="form-select" id="regSourceSelect" required>
-                    <option value="">Select source...</option>
+        <!-- Regulations Table -->
+        <div class="card shadow-sm" id="regListCard">
+          <div class="card-body p-0">
+            <table class="table table-hover mb-0" style="font-size:0.85rem;">
+              <thead class="table-dark">
+                <tr>
+                  <th style="width:35%">Regulation</th>
+                  <th style="width:10%">Source</th>
+                  <th style="width:12%">Category</th>
+                  <th style="width:8%">Version</th>
+                  <th style="width:12%">Published</th>
+                  <th style="width:10%">Status</th>
+                  <th style="width:13%">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="regulationsBody"></tbody>
+            </table>
+          </div>
+          <div class="card-footer bg-white" id="regPagination"></div>
+        </div>
+
+        <!-- Regulation Detail Panel (hidden by default) -->
+        <div id="regDetailPanel" class="d-none mt-3">
+          <button class="btn btn-outline-secondary btn-sm mb-3" onclick="closeRegDetail()">← Back to list</button>
+          <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+              <h5 class="mb-0" id="regDetailTitle"></h5>
+              <a href="#" target="_blank" id="regDetailSourceLink" class="btn btn-outline-primary btn-sm">🔗 View Official Source</a>
+            </div>
+            <div class="card-body">
+              <div class="row g-3 mb-3">
+                <div class="col-md-3"><small class="text-uppercase text-secondary fw-bold d-block">Source</small><span id="regDetailSource"></span></div>
+                <div class="col-md-3"><small class="text-uppercase text-secondary fw-bold d-block">Category</small><span id="regDetailCategory"></span></div>
+                <div class="col-md-3"><small class="text-uppercase text-secondary fw-bold d-block">Version</small><span id="regDetailVersion"></span></div>
+                <div class="col-md-3"><small class="text-uppercase text-secondary fw-bold d-block">Published</small><span id="regDetailDate"></span></div>
+              </div>
+              <div class="mb-3">
+                <small class="text-uppercase text-secondary fw-bold d-block mb-1">Content</small>
+                <div id="regDetailContent" class="p-3 bg-light rounded small" style="max-height:300px; overflow-y:auto; white-space:pre-wrap;"></div>
+              </div>
+              <!-- Related Items -->
+              <div id="regDetailRelated"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PDF Upload -->
+        <div class="card shadow-sm mb-3">
+          <div class="card-body py-3">
+            <h6 class="fw-semibold mb-2">📄 Upload PDF Regulation</h6>
+            <p class="small text-muted mb-2">Upload a regulatory PDF document. Text will be extracted automatically and the full AI pipeline (Impact Assessment → Gap Analysis → Task Creation) will trigger.</p>
+            <form id="pdfUploadForm" enctype="multipart/form-data">
+              <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-secondary">Title</label>
+                  <input type="text" class="form-control form-control-sm" id="pdfTitle" placeholder="Regulation title (or auto from filename)">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-secondary">Category</label>
+                  <select class="form-select form-select-sm" id="pdfCategory">
+                    <option value="AML">AML</option>
+                    <option value="AML/CFT">AML/CFT</option>
+                    <option value="KYC">KYC</option>
+                    <option value="Digital Payment Tokens">Digital Payment Tokens</option>
+                    <option value="Cryptocurrency">Cryptocurrency</option>
+                    <option value="Banking Supervision">Banking Supervision</option>
+                    <option value="Capital Requirements">Capital Requirements</option>
+                    <option value="Cyber">Cybersecurity</option>
+                    <option value="TRM">Technology Risk</option>
+                    <option value="Data Privacy">Data Privacy</option>
+                    <option value="ESG">ESG / Green Finance</option>
+                    <option value="Financial Conduct">Financial Conduct</option>
+                    <option value="Operational Risk">Operational Risk</option>
+                    <option value="Governance">Governance</option>
                   </select>
                 </div>
-                <div class="col-md-4">
-                  <label for="regTitleInput" class="form-label fw-semibold text-secondary">Title</label>
-                  <input type="text" class="form-control" id="regTitleInput" placeholder="Regulation title" required>
-                </div>
-                <div class="col-md-4">
-                  <label for="regCategoryInput" class="form-label fw-semibold text-secondary">Category</label>
-                  <input type="text" class="form-control" id="regCategoryInput" placeholder="e.g. AML, KYC" required>
-                </div>
-                <div class="col-md-12">
-                  <label for="regContentInput" class="form-label fw-semibold text-secondary">Content</label>
-                  <textarea class="form-control" id="regContentInput" rows="3" placeholder="Regulation content..." required></textarea>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-secondary">Source</label>
+                  <select class="form-select form-select-sm" id="pdfSource">
+                    <option value="1">MAS</option>
+                    <option value="2">FATF</option>
+                    <option value="3">FinCEN</option>
+                    <option value="4">ECB</option>
+                    <option value="5">FCA</option>
+                  </select>
                 </div>
                 <div class="col-md-3">
-                  <label for="regVersionInput" class="form-label fw-semibold text-secondary">Version (optional)</label>
-                  <input type="text" class="form-control" id="regVersionInput" placeholder="e.g. 1.0">
+                  <label class="form-label small fw-semibold text-secondary">PDF File</label>
+                  <input type="file" class="form-control form-control-sm" id="pdfFileInput" accept=".pdf" required>
                 </div>
-                <div class="col-md-3">
-                  <label for="regDateInput" class="form-label fw-semibold text-secondary">Published Date (optional)</label>
-                  <input type="date" class="form-control" id="regDateInput">
-                </div>
-                <div class="col-md-6 d-flex align-items-end">
-                  <button type="submit" class="btn btn-primary">Add Regulation</button>
+                <div class="col-md-2">
+                  <button type="submit" class="btn btn-primary btn-sm w-100">📤 Upload & Process</button>
                 </div>
               </div>
             </form>
+            <div id="pdfUploadResult" class="mt-2"></div>
           </div>
         </div>
+
+        <!-- Scrape URL -->
+        <div class="card shadow-sm mb-3">
+          <div class="card-body py-3">
+            <h6 class="fw-semibold mb-2">🔗 Scrape from URL</h6>
+            <p class="small text-muted mb-2">Paste a regulatory source URL. The system will fetch the page content, extract text, and trigger the AI pipeline.</p>
+            <form id="urlScrapeForm">
+              <div class="row g-2 align-items-end">
+                <div class="col-md-5">
+                  <label class="form-label small fw-semibold text-secondary">URL</label>
+                  <input type="url" class="form-control form-control-sm" id="scrapeUrlInput" placeholder="https://www.mas.gov.sg/regulation/..." required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-secondary">Title (optional)</label>
+                  <input type="text" class="form-control form-control-sm" id="scrapeUrlTitle" placeholder="Auto-detect">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-secondary">Category</label>
+                  <input type="text" class="form-control form-control-sm" id="scrapeUrlCategory" list="scrapeUrlCategoryList" placeholder="Type or select..." required>
+                  <datalist id="scrapeUrlCategoryList">
+                    <option value="AML">
+                    <option value="AML/CFT">
+                    <option value="KYC">
+                    <option value="Digital Payment Tokens">
+                    <option value="Cryptocurrency">
+                    <option value="Banking Supervision">
+                    <option value="Capital Requirements">
+                    <option value="Cyber">
+                    <option value="TRM">
+                    <option value="Data Privacy">
+                    <option value="ESG">
+                    <option value="Financial Conduct">
+                    <option value="Operational Risk">
+                    <option value="Governance">
+                  </datalist>
+                </div>
+                <div class="col-md-1">
+                  <label class="form-label small fw-semibold text-secondary">Source</label>
+                  <select class="form-select form-select-sm" id="scrapeUrlSource">
+                    <option value="1">MAS</option>
+                    <option value="2">FATF</option>
+                    <option value="3">FinCEN</option>
+                    <option value="4">ECB</option>
+                    <option value="5">FCA</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <button type="submit" class="btn btn-primary btn-sm w-100">🔍 Scrape & Process</button>
+                </div>
+              </div>
+            </form>
+            <div id="urlScrapeResult" class="mt-2"></div>
+          </div>
+        </div>
+
+        <!-- Add Regulation Form (collapsed) -->
+        <details class="mt-3">
+          <summary class="btn btn-outline-primary btn-sm mb-2">+ Add Regulation Manually</summary>
+          <div class="card shadow-sm mb-4">
+            <div class="card-body">
+              <form id="regulationForm">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label for="regSourceSelect" class="form-label fw-semibold text-secondary">Source</label>
+                    <select class="form-select" id="regSourceSelect" required><option value="">Select source...</option></select>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="regTitleInput" class="form-label fw-semibold text-secondary">Title</label>
+                    <input type="text" class="form-control" id="regTitleInput" placeholder="Regulation title" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="regCategoryInput" class="form-label fw-semibold text-secondary">Category</label>
+                    <input type="text" class="form-control" id="regCategoryInput" placeholder="e.g. AML, KYC" required>
+                  </div>
+                  <div class="col-md-12">
+                    <label for="regContentInput" class="form-label fw-semibold text-secondary">Content</label>
+                    <textarea class="form-control" id="regContentInput" rows="3" placeholder="Regulation content..." required></textarea>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="regVersionInput" class="form-label fw-semibold text-secondary">Version</label>
+                    <input type="text" class="form-control" id="regVersionInput" placeholder="e.g. 1.0">
+                  </div>
+                  <div class="col-md-3">
+                    <label for="regDateInput" class="form-label fw-semibold text-secondary">Published Date</label>
+                    <input type="date" class="form-control" id="regDateInput">
+                  </div>
+                  <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Add Regulation</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </details>
 
         <!-- Edit Regulation Section (hidden by default) -->
         <div id="editRegSection" class="d-none">
@@ -783,31 +1029,13 @@
               <h5 class="card-title">Edit Regulation</h5>
               <div class="row g-3">
                 <div class="col-md-4">
-                  <label for="editRegSourceSelect" class="form-label fw-semibold text-secondary">Source</label>
-                  <select class="form-select" id="editRegSourceSelect">
-                    <option value="">Select source...</option>
-                  </select>
+                  <select class="form-select" id="editRegSourceSelect"><option value="">Select source...</option></select>
                 </div>
-                <div class="col-md-4">
-                  <label for="editRegTitle" class="form-label fw-semibold text-secondary">Title</label>
-                  <input type="text" class="form-control" id="editRegTitle">
-                </div>
-                <div class="col-md-4">
-                  <label for="editRegCategory" class="form-label fw-semibold text-secondary">Category</label>
-                  <input type="text" class="form-control" id="editRegCategory">
-                </div>
-                <div class="col-md-12">
-                  <label for="editRegContent" class="form-label fw-semibold text-secondary">Content</label>
-                  <textarea class="form-control" id="editRegContent" rows="3"></textarea>
-                </div>
-                <div class="col-md-3">
-                  <label for="editRegVersion" class="form-label fw-semibold text-secondary">Version</label>
-                  <input type="text" class="form-control" id="editRegVersion">
-                </div>
-                <div class="col-md-3">
-                  <label for="editRegDate" class="form-label fw-semibold text-secondary">Published Date</label>
-                  <input type="date" class="form-control" id="editRegDate">
-                </div>
+                <div class="col-md-4"><input type="text" class="form-control" id="editRegTitle"></div>
+                <div class="col-md-4"><input type="text" class="form-control" id="editRegCategory"></div>
+                <div class="col-md-12"><textarea class="form-control" id="editRegContent" rows="3"></textarea></div>
+                <div class="col-md-3"><input type="text" class="form-control" id="editRegVersion"></div>
+                <div class="col-md-3"><input type="date" class="form-control" id="editRegDate"></div>
                 <div class="col-md-6 d-flex align-items-end gap-2">
                   <button type="button" class="btn btn-warning" id="editRegUpdateBtn">Update</button>
                   <button type="button" class="btn btn-secondary" id="editRegCancelBtn">Cancel</button>
@@ -818,110 +1046,187 @@
           </div>
         </div>
 
-        <!-- Regulations Table -->
-        <div class="card shadow-sm">
-          <div class="card-body p-0">
-            <table class="table table-striped table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Title</th>
-                  <th>Source</th>
-                  <th>Category</th>
-                  <th>Version</th>
-                  <th>Published Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="regulationsBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Pagination Controls -->
-        <div class="card-footer bg-white" id="regPagination"></div>
-
       </div>
       <!-- END REGULATIONS VIEW -->
 
-      <!-- ==================== CHANGES & IMPACT VIEW (Merged) ==================== -->
+      <!-- ==================== CHANGES & IMPACT VIEW ==================== -->
       <div id="view-changes" class="d-none">
 
-        <h4 class="mb-3">Regulation Changes & Impact Assessment</h4>
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <h4 class="mb-0">Changes &amp; Impact Assessment</h4>
+          <button class="btn btn-outline-success btn-sm" onclick="exportTableCSV('changes')">📥 Export CSV</button>
+        </div>
+        <p class="text-muted mb-4 small">Regulatory modifications detected by the Scraper agent, scored for operational impact by the Assessor agent. Critical/High changes trigger auto-task creation.</p>
 
-        <!-- Impact Summary Cards -->
+        <!-- Summary Cards: 5 cards -->
         <div class="row g-3 mb-4">
           <div class="col">
+            <div class="card summary-card bg-primary text-white shadow-sm h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="card-subtitle mb-1 text-white-50 small">Total Changes</h6>
+                <h2 class="card-title mb-0" id="ciTotalCount">0</h2>
+              </div>
+            </div>
+          </div>
+          <div class="col">
             <div class="card summary-card bg-danger text-white shadow-sm h-100">
-              <div class="card-body text-center">
-                <h6 class="card-subtitle mb-1 text-white-50">Critical</h6>
-                <h2 class="card-title mb-0" id="impactCritical">0</h2>
+              <div class="card-body text-center py-3">
+                <h6 class="card-subtitle mb-1 text-white-50 small">Critical</h6>
+                <h2 class="card-title mb-0" id="ciCritical">0</h2>
               </div>
             </div>
           </div>
           <div class="col">
             <div class="card summary-card bg-warning text-dark shadow-sm h-100">
-              <div class="card-body text-center">
-                <h6 class="card-subtitle mb-1 opacity-75">High</h6>
-                <h2 class="card-title mb-0" id="impactHigh">0</h2>
+              <div class="card-body text-center py-3">
+                <h6 class="card-subtitle mb-1 opacity-75 small">High</h6>
+                <h2 class="card-title mb-0" id="ciHigh">0</h2>
               </div>
             </div>
           </div>
           <div class="col">
             <div class="card summary-card bg-info text-white shadow-sm h-100">
-              <div class="card-body text-center">
-                <h6 class="card-subtitle mb-1 text-white-50">Medium</h6>
-                <h2 class="card-title mb-0" id="impactMedium">0</h2>
+              <div class="card-body text-center py-3">
+                <h6 class="card-subtitle mb-1 text-white-50 small">Medium</h6>
+                <h2 class="card-title mb-0" id="ciMedium">0</h2>
               </div>
             </div>
           </div>
           <div class="col">
-            <div class="card summary-card bg-success text-white shadow-sm h-100">
-              <div class="card-body text-center">
-                <h6 class="card-subtitle mb-1 text-white-50">Low</h6>
-                <h2 class="card-title mb-0" id="impactLow">0</h2>
+            <div class="card summary-card bg-dark text-white shadow-sm h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="card-subtitle mb-1 text-white-50 small">Auto-Tasks Created</h6>
+                <h2 class="card-title mb-0" id="ciAutoTasks">0</h2>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Impact Score Filter -->
+        <!-- Filter Bar -->
         <div class="card shadow-sm mb-3">
           <div class="card-body py-2">
-            <div class="row align-items-center">
+            <div class="row g-2 align-items-center">
               <div class="col-md-3">
-                <label for="changesFilterSelect" class="form-label fw-semibold text-secondary mb-0">Filter by Impact</label>
+                <select id="ciImpactFilter" class="form-select form-select-sm" onchange="filterCI()">
+                  <option value="">All Impact Levels</option>
+                  <option value="Critical">🔴 Critical</option>
+                  <option value="High">🟠 High</option>
+                  <option value="Medium">🟡 Medium</option>
+                  <option value="Low">🟢 Low</option>
+                </select>
               </div>
               <div class="col-md-3">
-                <select id="changesFilterSelect" class="form-select form-select-sm" onchange="filterChanges(this.value)">
-                  <option value="">All Levels</option>
-                  <option value="Critical">Critical</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
+                <select id="ciTaskFilter" class="form-select form-select-sm" onchange="filterCI()">
+                  <option value="">All Task Statuses</option>
+                  <option value="has_task">⚡ Has Auto-Task</option>
+                  <option value="no_task">⚠ No Task Yet</option>
                 </select>
+              </div>
+              <div class="col-md-3">
+                <select id="ciAreaFilter" class="form-select form-select-sm" onchange="filterCI()">
+                  <option value="">All Affected Areas</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <input type="text" class="form-control form-control-sm" id="ciSearchInput" placeholder="Search regulation title or summary…" oninput="filterCI()">
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Changes Table -->
-        <div class="card shadow-sm">
+        <!-- Combined Table -->
+        <div class="card shadow-sm" id="ciListCard">
           <div class="card-body p-0">
-            <table class="table table-striped table-hover mb-0">
-              <thead class="table-light">
+            <table class="table table-hover mb-0" id="ciTable">
+              <thead class="table-dark">
                 <tr>
-                  <th>Regulation</th>
-                  <th>Previous Ver.</th>
-                  <th>New Ver.</th>
-                  <th>Impact</th>
-                  <th>Differences</th>
-                  <th>Detected</th>
+                  <th style="width:28%">Regulation</th>
+                  <th style="width:30%">Summary of Change</th>
+                  <th style="width:14%">Affected Areas</th>
+                  <th style="width:10%">Impact</th>
+                  <th style="width:10%">Detected</th>
+                  <th style="width:8%">Task</th>
                 </tr>
               </thead>
-              <tbody id="changesBody"></tbody>
+              <tbody id="ciBody"></tbody>
             </table>
           </div>
-          <div class="card-footer bg-white" id="changesPagination"></div>
+          <div class="card-footer bg-white" id="ciPagination"></div>
+        </div>
+
+        <!-- Detail Panel (old vs new diff) -->
+        <div id="ciDetailCard" class="d-none mt-3">
+          <button class="btn btn-outline-secondary btn-sm mb-3" onclick="closeCIDetail()">← Back to all changes</button>
+          <div class="card shadow-sm">
+            <div class="card-body">
+
+              <!-- Header row: title + impact badge + change type -->
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                  <h5 class="mb-1" id="detailRegTitle"></h5>
+                  <span class="badge bg-secondary me-1" id="detailChangeTypeBadge"></span>
+                  <span class="badge bg-secondary" id="detailCategoryBadge"></span>
+                </div>
+                <span class="badge fs-6 px-3 py-2" id="detailImpactBadge"></span>
+              </div>
+
+              <!-- Impact metadata row -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                  <div class="p-2 rounded bg-light">
+                    <small class="text-uppercase text-secondary fw-bold d-block mb-1" style="font-size:0.65rem;">Affected Areas</small>
+                    <div id="detailAffectedAreasBadges"></div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="p-2 rounded bg-light">
+                    <small class="text-uppercase text-secondary fw-bold d-block mb-1" style="font-size:0.65rem;">Compliance Deadline</small>
+                    <span id="detailDeadline" class="fw-semibold"></span>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="p-2 rounded bg-light">
+                    <small class="text-uppercase text-secondary fw-bold d-block mb-1" style="font-size:0.65rem;">Detected</small>
+                    <span id="detailDetectedDate" class="fw-semibold"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Change summary + reasoning -->
+              <div class="alert alert-info mb-3 py-2">
+                <strong>Change Summary:</strong> <span id="detailSummary"></span>
+              </div>
+
+              <!-- Structured diff: added / removed / modified -->
+              <div id="detailDiffSection" class="mb-3"></div>
+
+              <!-- Old vs New side-by-side -->
+              <div class="row g-3" id="detailDiffPanels">
+                <div class="col-md-6" id="detailOldPanel">
+                  <div class="p-3 border rounded h-100" style="border-left: 4px solid #dc3545 !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <small class="text-uppercase text-danger fw-bold" style="font-size:0.65rem;">Previous Version</small>
+                      <a href="#" target="_blank" id="detailOldLink" class="text-muted small text-decoration-none">🔗 Source</a>
+                    </div>
+                    <p class="small mb-0 text-muted" id="detailOldContent" style="max-height:280px; overflow-y:auto; white-space:pre-wrap;"></p>
+                  </div>
+                </div>
+                <div class="col-md-6" id="detailNewPanel">
+                  <div class="p-3 border rounded h-100" style="border-left: 4px solid #198754 !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <small class="text-uppercase text-success fw-bold" style="font-size:0.65rem;">Current Version</small>
+                      <a href="#" target="_blank" id="detailNewLink" class="text-muted small text-decoration-none">🔗 Source</a>
+                    </div>
+                    <p class="small mb-0" id="detailNewContent" style="max-height:280px; overflow-y:auto; white-space:pre-wrap;"></p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Auto-task section -->
+              <div id="detailTaskSection" class="mt-3"></div>
+
+            </div>
+          </div>
         </div>
 
       </div>
@@ -931,6 +1236,40 @@
       <div id="view-policies" class="d-none">
 
         <h4 class="mb-3">Internal Policies</h4>
+
+        <!-- Policy Sub-Tabs -->
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" onclick="showPolicyTab('current'); return false;" id="policyTab-current">Current Policies</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showPolicyTab('proposals'); return false;" id="policyTab-proposals">
+              🤖 AI Proposals <span class="badge bg-danger ms-1 d-none" id="proposalCountBadge">0</span>
+            </a>
+          </li>
+        </ul>
+
+        <!-- ===== TAB: CURRENT POLICIES ===== -->
+        <div id="policyPage-current">
+
+        <!-- Filter Bar -->
+        <div class="card shadow-sm mb-3">
+          <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-4">
+                <select id="policyHistoryFilter" class="form-select form-select-sm" onchange="filterPoliciesByHistory(this.value)">
+                  <option value="">All Policies</option>
+                  <option value="has_history">📜 Has Version History</option>
+                  <option value="no_history">No History Yet</option>
+                  <option value="ai_generated">🤖 AI Generated</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <input type="text" class="form-control form-control-sm" id="policySearchInput" placeholder="Search policy name..." oninput="filterPoliciesByHistory(document.getElementById('policyHistoryFilter').value)">
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Add Policy Form -->
         <div class="card shadow-sm mb-4">
@@ -977,23 +1316,21 @@
           </div>
         </div>
 
-        <!-- Policies Table -->
-        <div class="card shadow-sm">
-          <div class="card-body p-0">
-            <table class="table table-striped table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Policy Name</th>
-                  <th>Description</th>
-                  <th>Last Updated</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="policiesBody"></tbody>
-            </table>
-          </div>
-          <div class="card-footer bg-white" id="policiesPagination"></div>
+        <!-- Policies Cards -->
+        <div id="policiesContainer" class="row g-3"></div>
+        <div class="mt-3" id="policiesPagination"></div>
+
         </div>
+        <!-- END TAB: CURRENT POLICIES -->
+
+        <!-- ===== TAB: AI PROPOSALS ===== -->
+        <div id="policyPage-proposals" class="d-none">
+          <div class="alert alert-info">
+            <strong>🤖 How this works:</strong> The Policy Advisor agent analyzes recurring compliance gaps and proposes new policies or updates to existing ones. Review each proposal below and Accept (applies it live) or Reject (discards it).
+          </div>
+          <div id="proposalsContainer" class="row g-3"></div>
+        </div>
+        <!-- END TAB: AI PROPOSALS -->
 
       </div>
       <!-- END POLICIES VIEW -->
@@ -1001,60 +1338,150 @@
       <!-- ==================== AUDIT TRAIL VIEW ==================== -->
       <div id="view-audit" class="d-none">
 
-        <h4 class="mb-3">Audit Trail</h4>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="mb-0">Audit Trail &amp; Compliance Archive</h4>
+          <button class="btn btn-outline-primary btn-sm" onclick="printAuditReport()">🖨️ Print Audit Report</button>
+        </div>
+        <p class="text-muted small mb-4">Fully searchable archive of all regulatory changes and actions taken. Supports internal audits and external regulatory inspections.</p>
 
-        <!-- Audit Filters -->
-        <div class="card shadow-sm mb-4">
-          <div class="card-body">
-            <div class="row g-3 align-items-end">
-              <div class="col-md-2">
-                <label for="auditUserSelect" class="form-label fw-semibold text-secondary">User</label>
-                <select class="form-select" id="auditUserSelect">
-                  <option value="">All Users</option>
-                </select>
+        <!-- Summary Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col">
+            <div class="card summary-card bg-primary text-white shadow-sm h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="card-subtitle mb-1 text-white-50 small">Total Actions</h6>
+                <h2 class="card-title mb-0" id="auditTotalCount">0</h2>
               </div>
-              <div class="col-md-2">
-                <label for="auditActionType" class="form-label fw-semibold text-secondary">Action Type</label>
-                <input type="text" class="form-control" id="auditActionType" placeholder="e.g. CREATE">
+            </div>
+          </div>
+          <div class="col">
+            <div class="card summary-card bg-success text-white shadow-sm h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="card-subtitle mb-1 text-white-50 small">This Week</h6>
+                <h2 class="card-title mb-0" id="auditWeekCount">0</h2>
               </div>
-              <div class="col-md-2">
-                <label for="auditTargetTable" class="form-label fw-semibold text-secondary">Target Table</label>
-                <input type="text" class="form-control" id="auditTargetTable" placeholder="e.g. tasks">
+            </div>
+          </div>
+          <div class="col">
+            <div class="card summary-card bg-info text-white shadow-sm h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="card-subtitle mb-1 text-white-50 small">🤖 AI Agent Actions</h6>
+                <h2 class="card-title mb-0" id="auditAICount">0</h2>
               </div>
-              <div class="col-md-2">
-                <label for="auditStartDate" class="form-label fw-semibold text-secondary">Start Date</label>
-                <input type="date" class="form-control" id="auditStartDate">
-              </div>
-              <div class="col-md-2">
-                <label for="auditEndDate" class="form-label fw-semibold text-secondary">End Date</label>
-                <input type="date" class="form-control" id="auditEndDate">
-              </div>
-              <div class="col-md-2 d-flex gap-2">
-                <button type="button" class="btn btn-primary" id="auditApplyBtn">Apply Filters</button>
-                <button type="button" class="btn btn-outline-secondary" id="auditClearBtn">Clear Filters</button>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card summary-card bg-dark text-white shadow-sm h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="card-subtitle mb-1 text-white-50 small">👤 Human Actions</h6>
+                <h2 class="card-title mb-0" id="auditHumanCount">0</h2>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Audit Logs Table -->
-        <div class="card shadow-sm">
-          <div class="card-body p-0">
-            <table class="table table-striped table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Username</th>
-                  <th>Action Type</th>
-                  <th>Target Table</th>
-                  <th>Target ID</th>
-                  <th>Description</th>
-                  <th>Timestamp</th>
-                </tr>
-              </thead>
-              <tbody id="auditBody"></tbody>
-            </table>
+        <!-- Agent Activity Breakdown -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white fw-semibold py-2">🤖 Agent Activity Breakdown</div>
+          <div class="card-body py-2">
+            <div class="row g-2 text-center" id="agentBreakdown">
+              <div class="col"><small class="text-muted d-block">Scraper</small><strong id="agentScraper">0</strong><small class="text-muted d-block">regulations</small></div>
+              <div class="col"><small class="text-muted d-block">Assessor</small><strong id="agentAssessor">0</strong><small class="text-muted d-block">assessments</small></div>
+              <div class="col"><small class="text-muted d-block">Analyzer</small><strong id="agentAnalyzer">0</strong><small class="text-muted d-block">analyses</small></div>
+              <div class="col"><small class="text-muted d-block">Dispatcher</small><strong id="agentDispatcher">0</strong><small class="text-muted d-block">tasks created</small></div>
+              <div class="col"><small class="text-muted d-block">Advisor</small><strong id="agentAdvisor">0</strong><small class="text-muted d-block">proposals</small></div>
+            </div>
           </div>
-          <div class="card-footer bg-white" id="auditPagination"></div>
+        </div>
+
+        <!-- View Toggle + Filters -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" id="auditViewMode" onchange="toggleAuditView(this.value)">
+                  <option value="table">📋 Table View</option>
+                  <option value="timeline">⏱️ Timeline View</option>
+                  <option value="chain">🔗 Response Chain</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" id="auditActorFilter" onchange="applyAuditFilters()">
+                  <option value="">All Actors</option>
+                  <option value="ai">🤖 AI Agent Only</option>
+                  <option value="human">👤 Human Only</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" id="auditUserSelect">
+                  <option value="">All Users</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" id="auditActionFilter" onchange="applyAuditFilters()">
+                  <option value="">All Actions</option>
+                  <option value="IMPACT_ASSESSED">🤖 Impact Assessed</option>
+                  <option value="TASK_AUTO_CREATED">🤖 Task Auto-Created</option>
+                  <option value="TASK_CREATED">👤 Task Created</option>
+                  <option value="STATUS_UPDATE">👤 Status Update</option>
+                  <option value="LOGIN">👤 Login</option>
+                  <option value="POLICY">📋 Policy Actions</option>
+                  <option value="GAP">📋 Gap Actions</option>
+                  <option value="PROPOSAL">🤖 AI Proposals</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <input type="date" class="form-control form-control-sm" id="auditStartDate">
+              </div>
+              <div class="col-md-2">
+                <input type="date" class="form-control form-control-sm" id="auditEndDate">
+              </div>
+              <div class="col-md-2 d-flex gap-1">
+                <button type="button" class="btn btn-primary btn-sm" id="auditApplyBtn">Apply</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="auditClearBtn">Clear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table View -->
+        <div id="auditTableView">
+          <div class="card shadow-sm">
+            <div class="card-body p-0">
+              <table class="table table-hover mb-0" style="font-size:0.85rem;">
+                <thead class="table-dark">
+                  <tr>
+                    <th style="width:10%">User</th>
+                    <th style="width:14%">Action</th>
+                    <th style="width:10%">Target</th>
+                    <th style="width:46%">Description</th>
+                    <th style="width:12%">Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="auditBody"></tbody>
+              </table>
+            </div>
+            <div class="card-footer bg-white" id="auditPagination"></div>
+          </div>
+        </div>
+
+        <!-- Timeline View (hidden by default) -->
+        <div id="auditTimelineView" class="d-none">
+          <div id="auditTimeline" class="position-relative" style="border-left: 3px solid #dee2e6; padding-left: 20px; margin-left: 10px;"></div>
+          <div id="auditTimelinePagination" class="mt-3"></div>
+        </div>
+
+        <!-- Response Chain View (hidden by default) -->
+        <div id="auditChainView" class="d-none">
+          <div class="card shadow-sm mb-3">
+            <div class="card-body py-3">
+              <label class="form-label fw-semibold small text-secondary">Select a regulation to view its full compliance response chain:</label>
+              <select class="form-select form-select-sm" id="auditChainRegSelect" onchange="loadResponseChain(this.value)">
+                <option value="">Select regulation…</option>
+              </select>
+            </div>
+          </div>
+          <div id="auditChainContent"></div>
         </div>
 
       </div>

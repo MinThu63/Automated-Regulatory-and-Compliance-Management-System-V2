@@ -2,17 +2,44 @@ const express = require('express');
 const pool = require('../db');
 const logAudit = require('../middleware/auditLog');
 const { analyzeGapRAG } = require('../services/ragEngine');
+const { analyzeGap, analyzeAll } = require('../agents/analyzer');
 const router = express.Router();
 
 // GET /api/compliance-gaps
 router.get('/', async (req, res) => {
   try {
     var [rows] = await pool.query(
-      `SELECT cg.gap_id, cg.gap_description, cg.status, r.title AS regulation_title, ip.policy_name, cg.identified_at, COALESCE(r.source_url, rs.base_url) AS source_url
-       FROM compliance_gaps cg JOIN regulations r ON cg.reg_id = r.reg_id
+      `SELECT cg.gap_id, cg.reg_id, cg.policy_id, cg.gap_description, cg.status, 
+       r.title AS regulation_title, r.content AS regulation_content,
+       ip.policy_name, ip.description AS policy_description,
+       cg.identified_at, COALESCE(r.source_url, rs.base_url) AS source_url,
+       rc.semantic_differences, rc.impact_score
+       FROM compliance_gaps cg 
+       JOIN regulations r ON cg.reg_id = r.reg_id
        JOIN internal_policies ip ON cg.policy_id = ip.policy_id
-       JOIN regulatory_sources rs ON r.source_id = rs.source_id`
+       JOIN regulatory_sources rs ON r.source_id = rs.source_id
+       LEFT JOIN regulation_changes rc ON rc.reg_id = cg.reg_id
+       ORDER BY cg.identified_at DESC`
     );
+
+    // Get linked task info for each gap
+    for (var row of rows) {
+      var [taskLinks] = await pool.query(
+        `SELECT t.task_id, t.title AS linked_task_title, t.status AS linked_task_status
+         FROM task_gaps tg JOIN tasks t ON tg.task_id = t.task_id WHERE tg.gap_id = ? LIMIT 1`,
+        [row.gap_id]
+      );
+      if (taskLinks.length > 0) {
+        row.linked_task_id = taskLinks[0].task_id;
+        row.linked_task_title = taskLinks[0].linked_task_title;
+        row.linked_task_status = taskLinks[0].linked_task_status;
+      } else {
+        row.linked_task_id = null;
+        row.linked_task_title = null;
+        row.linked_task_status = null;
+      }
+    }
+
     res.status(200).json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -37,9 +64,18 @@ router.post('/analyze', async (req, res) => {
     if (policies.length === 0) return res.status(404).json({ error: 'Policy not found' });
 
     // Call RAG engine for gap analysis (handles retrieval + generation internally)
-    var analysis = await analyzeGapRAG(reg_id, policy_id);
+    var analysis = await analyzeGap(reg_id, policy_id);
 
-    // Return analysis WITHOUT auto-creating gaps — let the user decide
+    // Auto-flag the policy as needing review if gaps found
+    if (analysis && analysis.has_gaps) {
+      await pool.query(
+        'UPDATE internal_policies SET description = CONCAT(description, ?) WHERE policy_id = ?',
+        ['\n\n[⚠️ REVIEW NEEDED - ' + new Date().toISOString().slice(0, 10) + '] AI gap analysis identified compliance gaps against ' + regs[0].title + '. Please review and update this policy.', policy_id]
+      );
+      await logAudit(req.body.user_id || 1, 'POLICY_FLAGGED', 'internal_policies', policy_id, 'Policy auto-flagged for review after gap analysis against ' + regs[0].title);
+    }
+
+    // Return analysis — let the user decide which gaps to save
     res.status(200).json({
       regulation: regs[0].title,
       policy: policies[0].policy_name,
@@ -65,6 +101,51 @@ router.post('/', async (req, res) => {
     );
     await logAudit(req.body.user_id || 1, 'GAP_CREATED', 'compliance_gaps', result.insertId, 'Gap created: ' + gap_description.substring(0, 100));
     res.status(201).json({ message: 'Gap created', gap_id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/compliance-gaps/analyze-all — Cluster-based gap analysis
+router.post('/analyze-all', async (req, res) => {
+  try {
+    var result = await analyzeAll();
+    await logAudit(req.body.user_id || 1, 'BULK_CLUSTER_ANALYSIS', 'compliance_gaps', 0,
+      'Cluster analysis complete: ' + result.total_gaps + ' gaps across ' + result.clusters_analyzed + ' clusters');
+    res.status(200).json({ message: 'Cluster analysis complete', total_gaps_found: result.total_gaps, clusters_analyzed: result.clusters_analyzed, details: result.details });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/compliance-gaps/:id/link-task — Create a task linked to this gap
+router.post('/:id/link-task', async (req, res) => {
+  try {
+    var { id } = req.params;
+    var { title, deadline, description, department } = req.body;
+    if (!title || !deadline || !department) {
+      return res.status(400).json({ error: 'title, deadline, and department are required' });
+    }
+
+    // Verify gap exists
+    var [gaps] = await pool.query('SELECT gap_id, gap_description FROM compliance_gaps WHERE gap_id = ?', [id]);
+    if (gaps.length === 0) return res.status(404).json({ error: 'Gap not found' });
+
+    // Create task
+    var [result] = await pool.query(
+      'INSERT INTO tasks (department, title, description, deadline) VALUES (?, ?, ?, ?)',
+      [department, title, description || null, deadline]
+    );
+    var taskId = result.insertId;
+
+    // Link via task_gaps junction table (so it's clickable + consistent with auto-created tasks)
+    await pool.query('INSERT IGNORE INTO task_gaps (task_id, gap_id) VALUES (?, ?)', [taskId, id]);
+
+    // Update gap status to In Review since a task was created
+    await pool.query('UPDATE compliance_gaps SET status = ? WHERE gap_id = ? AND status = ?', ['In Review', id, 'Open']);
+
+    await logAudit(1, 'TASK_CREATED', 'tasks', taskId, 'Manual task linked to gap #' + id + ': ' + title + ' (Department: ' + department + ')');
+    res.status(201).json({ message: 'Task created and linked to gap', task_id: taskId, gap_id: parseInt(id) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

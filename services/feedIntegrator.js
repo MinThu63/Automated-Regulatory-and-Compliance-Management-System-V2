@@ -3,14 +3,23 @@ const cheerio = require('cheerio');
 const cron = require('node-cron');
 const pool = require('../db');
 const { assessImpactRAG, embedRegulation, embedAllExistingData } = require('./ragEngine');
+const { sendAlertNotification } = require('./notificationService');
 
 // =============================================
-// Source ID — MAS only (Phase 1 POC)
+// Source IDs — Multi-source (5 regulatory bodies)
 // =============================================
 
 const MAS_SOURCE_ID = 1;
+const FATF_SOURCE_ID = 2;
+const FINCEN_SOURCE_ID = 3;
+const ECB_SOURCE_ID = 4;
+const FCA_SOURCE_ID = 5;
 
 const MAS_SCRAPE_URL = process.env.MAS_SCRAPE_URL || 'https://www.mas.gov.sg/regulation/anti-money-laundering';
+const FATF_SCRAPE_URL = 'https://www.fatf-gafi.org/en/publications.html';
+const FINCEN_SCRAPE_URL = 'https://www.fincen.gov/news-room';
+const ECB_SCRAPE_URL = 'https://www.bankingsupervision.europa.eu/press/publications';
+const FCA_SCRAPE_URL = 'https://www.fca.org.uk/publications';
 
 // =============================================
 // Impact-to-Severity Mapping
@@ -65,6 +74,20 @@ async function saveToDatabase(data) {
           );
           console.log('[AlertSystem] Alert created:', severityLevel);
 
+          // AUTO-TASK: Generate task for Critical/High impact changes
+          if (impactScore === 'Critical' || impactScore === 'High') {
+            var deadline = new Date();
+            deadline.setDate(deadline.getDate() + (impactScore === 'Critical' ? 3 : 7));
+            await pool.query(
+              'INSERT INTO tasks (alert_id, assigned_to, title, description, deadline) VALUES ((SELECT alert_id FROM alerts WHERE change_id = ? LIMIT 1), 1, ?, ?, ?)',
+              [changeId, 'Review: ' + item.title.substring(0, 200), 'Auto-generated task. Regulation updated to v' + newVersion + '. Impact: ' + impactScore + '. Review and update internal policies accordingly.', deadline.toISOString().slice(0, 10)]
+            );
+            console.log('[AutoTask] Task created for', item.title, '(deadline:', deadline.toISOString().slice(0, 10) + ')');
+
+            // EMAIL NOTIFICATION for Critical/High
+            await sendAlertNotification(item.title, impactScore, severityLevel);
+          }
+
           // Re-embed the updated regulation
           await embedRegulation(existingReg.reg_id, item.title, item.content);
 
@@ -104,6 +127,20 @@ async function saveToDatabase(data) {
         [newRegId, newChangeId, newRegSeverity]
       );
       console.log('[AlertSystem] Alert:', newRegSeverity, 'for', item.title);
+
+      // AUTO-TASK: Generate task for Critical/High impact new regulations
+      if (newRegImpact === 'Critical' || newRegImpact === 'High') {
+        var taskDeadline = new Date();
+        taskDeadline.setDate(taskDeadline.getDate() + (newRegImpact === 'Critical' ? 3 : 7));
+        await pool.query(
+          'INSERT INTO tasks (alert_id, assigned_to, title, description, deadline) VALUES ((SELECT alert_id FROM alerts WHERE change_id = ? LIMIT 1), 1, ?, ?, ?)',
+          [newChangeId, 'Review: ' + item.title.substring(0, 200), 'Auto-generated task. New regulation detected. Impact: ' + newRegImpact + '. Assess compliance implications and update policies if needed.', taskDeadline.toISOString().slice(0, 10)]
+        );
+        console.log('[AutoTask] Task created for', item.title);
+
+        // EMAIL NOTIFICATION for Critical/High
+        await sendAlertNotification(item.title, newRegImpact, newRegSeverity);
+      }
 
     } catch (err) {
       console.error('[FeedIntegrator] DB insert error:', err.message);
@@ -217,29 +254,229 @@ function getMASFallbackData() {
 }
 
 // =============================================
-// MAS Official API
+// FATF Scraper
 // =============================================
 
+async function scrapeFATF() {
+  console.log('[FeedIntegrator] Scraping FATF publications...');
+  var results = [];
+  try {
+    var response = await axios.get(FATF_SCRAPE_URL, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      timeout: 15000
+    });
+    var $ = cheerio.load(response.data);
+    $('a[href*="/publications/"], a[href*="/recommendations/"]').each(function (_, el) {
+      var title = $(el).text().trim();
+      var href = $(el).attr('href');
+      if (title && title.length > 10 && title.length < 300) {
+        var fullUrl = href ? (href.startsWith('http') ? href : 'https://www.fatf-gafi.org' + href) : FATF_SCRAPE_URL;
+        results.push({
+          source_id: FATF_SOURCE_ID,
+          title: title.substring(0, 255),
+          category: 'AML',
+          content: 'Scraped from FATF: ' + (href || '') + ' — ' + title,
+          version: 1.0,
+          published_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          source_url: fullUrl
+        });
+      }
+    });
+    if (results.length === 0) {
+      results = getFATFFallbackData();
+    }
+    console.log('[FeedIntegrator] FATF scrape found ' + results.length + ' items');
+  } catch (err) {
+    console.error('[FeedIntegrator] FATF scrape failed:', err.message);
+    results = getFATFFallbackData();
+  }
+  return results;
+}
+
+function getFATFFallbackData() {
+  var now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  return [
+    { source_id: FATF_SOURCE_ID, title: 'FATF Recommendations - International Standards on Combating ML/TF', category: 'AML', content: 'The FATF Recommendations set out a comprehensive framework of measures for countries to combat money laundering, terrorist financing, and proliferation financing. Covers CDD, STR, wire transfers, correspondent banking, and targeted financial sanctions.', version: 1.0, published_date: now, source_url: 'https://www.fatf-gafi.org/en/topics/fatf-recommendations.html' },
+    { source_id: FATF_SOURCE_ID, title: 'FATF Guidance on Risk-Based Approach for Banking Sector', category: 'AML', content: 'Guidance on applying a risk-based approach to AML/CFT in the banking sector. Banks must identify, assess, and understand ML/TF risks and take appropriate measures to mitigate them.', version: 1.0, published_date: now, source_url: 'https://www.fatf-gafi.org/en/publications.html' },
+    { source_id: FATF_SOURCE_ID, title: 'FATF High-Risk and Non-Cooperative Jurisdictions', category: 'AML', content: 'List of jurisdictions with strategic deficiencies in their AML/CFT frameworks. Financial institutions must apply enhanced due diligence for transactions involving these jurisdictions.', version: 1.0, published_date: now, source_url: 'https://www.fatf-gafi.org/en/countries/black-and-grey-lists.html' },
+  ];
+}
+
 // =============================================
-// Main Feed Runner (MAS Only — Phase 1 POC with RAG)
+// FinCEN Scraper
+// =============================================
+
+async function scrapeFinCEN() {
+  console.log('[FeedIntegrator] Scraping FinCEN news...');
+  var results = [];
+  try {
+    var response = await axios.get(FINCEN_SCRAPE_URL, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      timeout: 15000
+    });
+    var $ = cheerio.load(response.data);
+    $('a[href*="/news/"], a[href*="/resources/"]').each(function (_, el) {
+      var title = $(el).text().trim();
+      var href = $(el).attr('href');
+      if (title && title.length > 10 && title.length < 300) {
+        var fullUrl = href ? (href.startsWith('http') ? href : 'https://www.fincen.gov' + href) : FINCEN_SCRAPE_URL;
+        results.push({
+          source_id: FINCEN_SOURCE_ID,
+          title: title.substring(0, 255),
+          category: 'AML',
+          content: 'Scraped from FinCEN: ' + (href || '') + ' — ' + title,
+          version: 1.0,
+          published_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          source_url: fullUrl
+        });
+      }
+    });
+    if (results.length === 0) {
+      results = getFinCENFallbackData();
+    }
+    console.log('[FeedIntegrator] FinCEN scrape found ' + results.length + ' items');
+  } catch (err) {
+    console.error('[FeedIntegrator] FinCEN scrape failed:', err.message);
+    results = getFinCENFallbackData();
+  }
+  return results;
+}
+
+function getFinCENFallbackData() {
+  var now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  return [
+    { source_id: FINCEN_SOURCE_ID, title: 'FinCEN - Bank Secrecy Act (BSA) Requirements', category: 'AML', content: 'US financial institutions must establish AML programs, file Currency Transaction Reports (CTRs) for transactions over USD 10,000, and file Suspicious Activity Reports (SARs) for suspicious transactions.', version: 1.0, published_date: now, source_url: 'https://www.fincen.gov/resources/statutes-and-regulations' },
+    { source_id: FINCEN_SOURCE_ID, title: 'FinCEN - Customer Due Diligence (CDD) Rule', category: 'AML', content: 'Requires financial institutions to identify and verify beneficial owners of legal entity customers. Applies to banks, brokers, mutual funds, and futures commission merchants.', version: 1.0, published_date: now, source_url: 'https://www.fincen.gov/resources/statutes-and-regulations' },
+    { source_id: FINCEN_SOURCE_ID, title: 'FinCEN Advisory on Ransomware and Digital Currency', category: 'Cyber', content: 'Advisory on detecting and reporting ransomware-related transactions. Financial institutions must file SARs for suspected ransomware payments and apply enhanced monitoring to cryptocurrency transactions.', version: 1.0, published_date: now, source_url: 'https://www.fincen.gov/news-room' },
+  ];
+}
+
+// =============================================
+// ECB Scraper
+// =============================================
+
+async function scrapeECB() {
+  console.log('[FeedIntegrator] Scraping ECB banking supervision...');
+  var results = [];
+  try {
+    var response = await axios.get(ECB_SCRAPE_URL, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      timeout: 15000
+    });
+    var $ = cheerio.load(response.data);
+    $('a[href*="/pub/"], a[href*="/press/"]').each(function (_, el) {
+      var title = $(el).text().trim();
+      var href = $(el).attr('href');
+      if (title && title.length > 10 && title.length < 300) {
+        var fullUrl = href ? (href.startsWith('http') ? href : 'https://www.bankingsupervision.europa.eu' + href) : ECB_SCRAPE_URL;
+        results.push({
+          source_id: ECB_SOURCE_ID,
+          title: title.substring(0, 255),
+          category: 'Banking Supervision',
+          content: 'Scraped from ECB: ' + (href || '') + ' — ' + title,
+          version: 1.0,
+          published_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          source_url: fullUrl
+        });
+      }
+    });
+    if (results.length === 0) {
+      results = getECBFallbackData();
+    }
+    console.log('[FeedIntegrator] ECB scrape found ' + results.length + ' items');
+  } catch (err) {
+    console.error('[FeedIntegrator] ECB scrape failed:', err.message);
+    results = getECBFallbackData();
+  }
+  return results;
+}
+
+function getECBFallbackData() {
+  var now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  return [
+    { source_id: ECB_SOURCE_ID, title: 'ECB Guide on Internal Models (TRIM)', category: 'Capital Requirements', content: 'ECB supervisory expectations on banks use of internal models for credit risk, market risk, and counterparty credit risk under the Capital Requirements Regulation (CRR).', version: 1.0, published_date: now, source_url: 'https://www.bankingsupervision.europa.eu/press/publications' },
+    { source_id: ECB_SOURCE_ID, title: 'ECB Supervisory Priorities 2026', category: 'Banking Supervision', content: 'Key supervisory priorities: credit risk management, operational resilience, digital transformation risks, and climate-related financial risks for supervised institutions.', version: 1.0, published_date: now, source_url: 'https://www.bankingsupervision.europa.eu/press/publications' },
+    { source_id: ECB_SOURCE_ID, title: 'ECB Guide on Fit and Proper Assessments', category: 'Governance', content: 'Requirements for assessing the suitability of members of management bodies in significant institutions. Covers knowledge, experience, reputation, conflicts of interest, and time commitment.', version: 1.0, published_date: now, source_url: 'https://www.bankingsupervision.europa.eu/press/publications' },
+  ];
+}
+
+// =============================================
+// FCA Scraper
+// =============================================
+
+async function scrapeFCA() {
+  console.log('[FeedIntegrator] Scraping FCA publications...');
+  var results = [];
+  try {
+    var response = await axios.get(FCA_SCRAPE_URL, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      timeout: 15000
+    });
+    var $ = cheerio.load(response.data);
+    $('a[href*="/publications/"], a[href*="/policy-statements/"]').each(function (_, el) {
+      var title = $(el).text().trim();
+      var href = $(el).attr('href');
+      if (title && title.length > 10 && title.length < 300) {
+        var fullUrl = href ? (href.startsWith('http') ? href : 'https://www.fca.org.uk' + href) : FCA_SCRAPE_URL;
+        results.push({
+          source_id: FCA_SOURCE_ID,
+          title: title.substring(0, 255),
+          category: 'Financial Conduct',
+          content: 'Scraped from FCA: ' + (href || '') + ' — ' + title,
+          version: 1.0,
+          published_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          source_url: fullUrl
+        });
+      }
+    });
+    if (results.length === 0) {
+      results = getFCAFallbackData();
+    }
+    console.log('[FeedIntegrator] FCA scrape found ' + results.length + ' items');
+  } catch (err) {
+    console.error('[FeedIntegrator] FCA scrape failed:', err.message);
+    results = getFCAFallbackData();
+  }
+  return results;
+}
+
+function getFCAFallbackData() {
+  var now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  return [
+    { source_id: FCA_SOURCE_ID, title: 'FCA - Money Laundering Regulations (MLR) 2017', category: 'AML', content: 'UK anti-money laundering regulations requiring firms to conduct CDD, ongoing monitoring, and SAR filing. Applies to all FCA-regulated firms including banks, payment institutions, and e-money issuers.', version: 1.0, published_date: now, source_url: 'https://www.fca.org.uk/firms/financial-crime/money-laundering-regulations' },
+    { source_id: FCA_SOURCE_ID, title: 'FCA - Consumer Duty Requirements', category: 'Consumer Protection', content: 'New consumer protection framework requiring firms to deliver good outcomes for retail customers. Covers products and services, price and value, consumer understanding, and consumer support.', version: 1.0, published_date: now, source_url: 'https://www.fca.org.uk/firms/consumer-duty' },
+    { source_id: FCA_SOURCE_ID, title: 'FCA - Operational Resilience Requirements', category: 'Operational Risk', content: 'Requirements for firms to identify important business services, set impact tolerances, and ensure they can remain within tolerance during severe but plausible disruption scenarios.', version: 1.0, published_date: now, source_url: 'https://www.fca.org.uk/publications' },
+  ];
+}
+
+// =============================================
+// Main Feed Runner (Multi-Source with RAG)
 // =============================================
 
 async function runFeedIntegration() {
   console.log('');
   console.log('========================================');
-  console.log('[FeedIntegrator] Starting MAS feed integration at', new Date().toLocaleString());
-  console.log('[FeedIntegrator] Phase 1 POC — MAS only + RAG pipeline');
+  console.log('[FeedIntegrator] Starting multi-source feed integration at', new Date().toLocaleString());
+  console.log('[FeedIntegrator] Sources: MAS, FATF, FinCEN, ECB, FCA');
   console.log('========================================');
 
-  var masData = await scrapeMAS();
+  // Scrape all 5 sources in parallel
+  var [masData, fatfData, fincenData, ecbData, fcaData] = await Promise.all([
+    scrapeMAS(),
+    scrapeFATF(),
+    scrapeFinCEN(),
+    scrapeECB(),
+    scrapeFCA()
+  ]);
 
-  console.log('[FeedIntegrator] Total MAS items fetched:', masData.length);
+  var allData = masData.concat(fatfData, fincenData, ecbData, fcaData);
+  console.log('[FeedIntegrator] Total items fetched across all sources:', allData.length);
 
-  if (masData.length > 0) {
-    var inserted = await saveToDatabase(masData);
-    console.log('[FeedIntegrator] New MAS regulations inserted:', inserted);
+  if (allData.length > 0) {
+    var inserted = await saveToDatabase(allData);
+    console.log('[FeedIntegrator] New regulations inserted:', inserted);
   } else {
-    console.log('[FeedIntegrator] No MAS data to insert');
+    console.log('[FeedIntegrator] No data to insert');
   }
 
   console.log('[FeedIntegrator] Feed integration complete');
@@ -251,7 +488,7 @@ async function runFeedIntegration() {
 // =============================================
 
 function startFeedScheduler() {
-  console.log('[FeedIntegrator] Feed scheduler initialized (MAS only — RAG enabled)');
+  console.log('[FeedIntegrator] Feed scheduler initialized (5 sources: MAS, FATF, FinCEN, ECB, FCA)');
 
   // Embed existing data first, then run feed integration
   embedAllExistingData().then(function () {
