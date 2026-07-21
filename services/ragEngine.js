@@ -22,7 +22,7 @@ const INDEX_NAME = process.env.PINECONE_INDEX || 'gldb-compliance';
 
 var index = null;
 
-// Namespaces (like separate collections in Chroma)
+// Namespaces (separate collections in Pinecone)
 const REGULATIONS_NS = 'regulations';
 const POLICIES_NS = 'policies';
 

@@ -1936,7 +1936,7 @@ async function analyzeGapWithAI() {
 
     showToast('AI gap analysis completed', 'success');
   } catch (err) {
-    contentDiv.innerHTML = '<strong class="text-danger">Analysis Failed:</strong> ' + err.message + '<br><small class="text-muted">Ensure Chroma is running and OpenAI API key is valid.</small><br><button class="btn btn-sm btn-outline-secondary mt-2" onclick="clearGapAnalysis()">Clear</button>';
+    contentDiv.innerHTML = '<strong class="text-danger">Analysis Failed:</strong> ' + err.message + '<br><small class="text-muted">Ensure Pinecone is connected and OpenAI API key is valid.</small><br><button class="btn btn-sm btn-outline-secondary mt-2" onclick="clearGapAnalysis()">Clear</button>';
     showToast('Gap analysis failed: ' + err.message, 'danger');
   }
 }
