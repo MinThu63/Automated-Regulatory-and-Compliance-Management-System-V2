@@ -146,8 +146,8 @@ app.use(cors());
 app.use(express.json());
 
 // Serve frontend static files
-app.use(express.static('frontend'));
-app.use('/assets', express.static('assets'));
+app.use(express.static(__dirname + '/frontend'));
+app.use('/assets', express.static(__dirname + '/assets'));
 
 // Register routes
 app.use('/api', authRoutes);
