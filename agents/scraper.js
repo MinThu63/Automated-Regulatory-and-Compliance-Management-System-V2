@@ -87,6 +87,39 @@ function formatDiffSummary(diff) {
   return parts.join(' | ').substring(0, 2000);
 }
 
+// =============================================
+// CONTENT-BASED CHANGE DETECTION HELPER
+// Determines if scraped content is meaningfully different from stored content.
+// Prevents false positives from minor whitespace/formatting changes during scraping.
+// =============================================
+
+function contentSignificantlyDifferent(oldText, newText) {
+  if (!oldText || !newText) return false;
+  var oldClean = oldText.replace(/\s+/g, ' ').trim();
+  var newClean = newText.replace(/\s+/g, ' ').trim();
+  if (oldClean === newClean) return false;
+
+  // Compare at the shorter length to avoid false positives from truncation differences.
+  // If old was stored at 2000 chars and new scrapes 5000 chars of the same page,
+  // that's NOT a real change — just more text captured.
+  var compareLen = Math.min(oldClean.length, newClean.length, 3000);
+  var oldCompare = oldClean.substring(0, compareLen);
+  var newCompare = newClean.substring(0, compareLen);
+
+  if (oldCompare === newCompare) return false; // Same content, just different truncation
+
+  // Check if meaningful differences exist in the overlapping portion
+  // If first 300 chars are identical, check middle and end sections
+  if (oldCompare.substring(0, 300) === newCompare.substring(0, 300)) {
+    // First 300 chars match — check if the rest is substantially different
+    var oldMid = oldCompare.substring(300, 800);
+    var newMid = newCompare.substring(300, 800);
+    if (oldMid === newMid) return false; // Middle also matches — likely same content
+  }
+
+  return true; // Content genuinely differs in the overlapping region
+}
+
 // Source configuration
 const SOURCES = {
   MAS: { id: 1, url: process.env.MAS_SCRAPE_URL || 'https://www.mas.gov.sg/regulation/anti-money-laundering' },
@@ -163,6 +196,10 @@ async function scrapeSource(name, sourceId, url, linkSelector, baseUrl) {
         // Clean whitespace
         content = content.replace(/\s+/g, ' ').trim();
 
+        // Strip common website UI boilerplate that gets scraped with content
+        content = content.replace(/Decrease font size Increase font size Print this page\s*/gi, '');
+        content = content.trim();
+
         // Skip if content is too short or looks like binary garbage
         if (content.length < 50 || /[\x00-\x08\x0E-\x1F]/.test(content.substring(0, 100))) {
           continue;
@@ -225,19 +262,22 @@ async function processRegulations(data) {
   for (var item of data) {
     try {
       var [existing] = await pool.query(
-        'SELECT reg_id, version FROM regulations WHERE title = ? AND source_id = ?',
+        'SELECT reg_id, version, content FROM regulations WHERE title = ? AND source_id = ?',
         [item.title, item.source_id]
       );
 
       if (existing.length > 0) {
         var existingReg = existing[0];
         var existingVersion = parseFloat(existingReg.version) || 1.0;
-        var newVersion = parseFloat(item.version) || 1.0;
+        var oldContent = existingReg.content || '';
 
-        if (newVersion > existingVersion) {
-          // CHANGE DETECTION — snapshot old content BEFORE overwriting, then diff
-          var [oldRow] = await pool.query('SELECT content FROM regulations WHERE reg_id = ?', [existingReg.reg_id]);
-          var oldContent = oldRow.length > 0 ? oldRow[0].content : '';
+        // CONTENT-BASED CHANGE DETECTION — compare actual text, not version numbers.
+        // This correctly detects when a regulation's content has been modified on the source website,
+        // even if the scraper doesn't know the new version number.
+        if (contentSignificantlyDifferent(oldContent, item.content)) {
+          var newVersion = existingVersion + 1.0; // Auto-increment version on real content change
+
+          // LLM-powered structured diff: identify added/removed/modified requirements
           var diff = await detectChanges(oldContent, item.content);
 
           await pool.query(

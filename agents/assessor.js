@@ -361,8 +361,17 @@ async function recordAssessment(data, impactScore, confidence, parsed, duration,
     var newVersion = data.new_version || data.version || 1.0;
     var affectedAreas = parsed.affected_areas.join(', ') || null;
     var changeDiffJson = data.change_diff ? JSON.stringify(data.change_diff) : null;
+
+    // For regulation.updated events: old_content and new_content are distinct (real diff from scraper).
+    // For regulation.new events: there IS no old version — store null for old_content, content for new_content.
+    // NEVER store same content in both fields — that creates a false "diff" in the UI.
     var oldContent = data.old_content || null;
     var newContent = data.new_content || data.content || null;
+
+    // Safety check: if old and new are identical, treat as new regulation (no old version)
+    if (oldContent && newContent && oldContent === newContent) {
+      oldContent = null;
+    }
 
     await pool.query(
       `INSERT INTO regulation_changes 

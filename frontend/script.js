@@ -2823,14 +2823,15 @@ async function openCIDetail(changeId) {
     newPanel.className = 'col-md-6';
     oldPanel.classList.remove('d-none');
 
-    if (detail.old_content && detail.new_content) {
-      document.getElementById('detailOldContent').textContent = detail.old_content;
-      document.getElementById('detailNewContent').textContent = detail.new_content;
+    if (detail.old_content && detail.new_content && detail.old_content !== detail.new_content) {
+      document.getElementById('detailOldContent').textContent = detail.old_content.replace(/Decrease font size Increase font size Print this page\s*/gi, '');
+      document.getElementById('detailNewContent').textContent = detail.new_content.replace(/Decrease font size Increase font size Print this page\s*/gi, '');
     } else {
-      // No previous version — hide old panel, show new full width
+      // No previous version OR old === new (agent couldn't detect real diff) — hide old panel, show current only
       oldPanel.classList.add('d-none');
       newPanel.className = 'col-md-12';
-      document.getElementById('detailNewContent').textContent = detail.new_content || 'Regulation content available in Regulations tab.';
+      var displayContent = detail.new_content || detail.old_content || 'Regulation content available in Regulations tab.';
+      document.getElementById('detailNewContent').textContent = displayContent.replace(/Decrease font size Increase font size Print this page\s*/gi, '');
     }
 
     var taskSection = document.getElementById('detailTaskSection');

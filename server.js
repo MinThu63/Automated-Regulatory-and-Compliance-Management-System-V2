@@ -78,54 +78,11 @@ async function backfillAffectedAreas() {
 }
 
 // =============================================
-// STARTUP: Simulate old versions for regulation_changes rows
-// For rows that have new_content but no old_content, use LLM to generate
-// a plausible "previous version" of the regulation text. This fills in the
-// View Diff panel so the comparison isn't empty.
-// Only generates for the FIRST 5 rows — demo purposes only.
-// Stored permanently in DB — only runs once per row.
+// STARTUP: simulateOldVersions — DISABLED
+// This was generating fake "old versions" using LLM, causing the diff view
+// to show near-identical content. Real old_content is now captured by the
+// scraper's content-based change detection when a regulation genuinely changes.
 // =============================================
-async function simulateOldVersions() {
-  try {
-    var [rows] = await pool.query(`
-      SELECT rc.change_id, rc.new_content, rc.semantic_differences, r.title
-      FROM regulation_changes rc
-      JOIN regulations r ON rc.reg_id = r.reg_id
-      WHERE rc.old_content IS NULL AND rc.new_content IS NOT NULL AND LENGTH(rc.new_content) > 50
-      ORDER BY rc.change_id ASC
-      LIMIT 5
-    `);
-
-    if (rows.length === 0) return;
-    console.log('[Startup] Simulating old versions for', rows.length, 'row(s) (max 5)...');
-
-    for (var row of rows) {
-      try {
-        var resp = await openai.chat.completions.create({
-          model: OPENAI_MODEL,
-          messages: [
-            { role: 'system', content: 'You generate plausible previous versions of regulatory documents. Given the current version and a change summary, produce what the document likely said BEFORE the change was made. Keep the same structure and length but reverse the described changes.' },
-            { role: 'user', content: 'Regulation: ' + row.title + '\n\nChange that was made: ' + (row.semantic_differences || 'Updated').substring(0, 300) + '\n\nCurrent version (after change):\n' + (row.new_content || '').substring(0, 2000) + '\n\nGenerate the PREVIOUS version (before the change was applied). Output only the previous version text, nothing else.' }
-          ],
-          temperature: 0.3,
-          max_tokens: 1000
-        });
-
-        var oldVersion = resp.choices[0].message.content.trim();
-        if (oldVersion && oldVersion.length > 30) {
-          await pool.query('UPDATE regulation_changes SET old_content = ? WHERE change_id = ?', [oldVersion, row.change_id]);
-          console.log('[Startup] Simulated old version for change_id=' + row.change_id + ' (' + row.title.substring(0, 40) + ')');
-        }
-      } catch (e) {
-        console.error('[Startup] Failed to simulate old version for change_id=' + row.change_id + ':', e.message);
-      }
-    }
-
-    console.log('[Startup] Old version simulation complete (5 max).');
-  } catch (err) {
-    console.error('[Startup] simulateOldVersions query failed:', err.message);
-  }
-}
 
 // Import route modules
 const authRoutes = require('./routes/auth');
@@ -216,9 +173,6 @@ app.listen(PORT, async () => {
 
     // AI backfill: fix any regulation_changes rows missing affected_areas
     backfillAffectedAreas();
-
-    // Simulate old versions for View Diff comparison
-    simulateOldVersions();
   } catch (err) {
     console.error('Database connection failed:', err.message);
   }

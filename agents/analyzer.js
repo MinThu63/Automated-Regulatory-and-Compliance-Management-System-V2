@@ -77,7 +77,7 @@ INTERNAL POLICIES:
 {policy_summaries}
 
 Output ONLY a JSON object:
-{"has_gaps": true|false, "gaps": [{"description": "specific gap", "gap_type": "Missing Procedure|Outdated Procedure|Insufficient Detail|Missing Control|Non-Compliant Threshold", "severity": "Critical|High|Medium|Low", "confidence": 0.0-1.0, "requirement": "which requirement is not met", "recommendation": "specific action to close this gap", "source_regulations": ["which regulations require this"]}], "summary": "one sentence overall assessment", "compliance_score": 0-100}`;
+{"has_gaps": true|false, "gaps": [{"description": "specific gap", "gap_type": "Missing Procedure|Outdated Procedure|Insufficient Detail|Missing Control|Non-Compliant Threshold", "severity": "Critical|High|Medium|Low", "confidence": 0.0-1.0, "requirement": "which requirement is not met", "recommendation": "specific action to close this gap", "policy_name": "name of the policy that should cover this but doesn't (or is insufficient)", "source_regulations": ["which regulations require this"]}], "summary": "one sentence overall assessment", "compliance_score": 0-100}`;
 
 const VERIFICATION_PROMPT = `Review your gap analysis. For each gap:
 1. Is this TRULY required by the regulations, or are you inferring?
@@ -283,9 +283,8 @@ async function analyzeAll() {
     var analysis = await analyzeCluster(category, regulations, policies);
 
     if (analysis && analysis.has_gaps && analysis.gaps && analysis.gaps.length > 0) {
-      // Save gaps — link to first regulation in cluster and first relevant policy
+      // Save gaps — link to first regulation in cluster and best-matching policy
       var primaryRegId = regIds[0];
-      var primaryPolicyId = policyIds[0];
 
       for (var gap of analysis.gaps) {
         var desc = gap.description || '';
@@ -294,18 +293,50 @@ async function analyzeAll() {
         if (gap.recommendation) desc += ' | Recommendation: ' + gap.recommendation;
         if (gap.source_regulations) desc += ' | Sources: ' + gap.source_regulations.join(', ').substring(0, 100);
 
+        // Link gap to the most relevant policy based on gap description matching
+        var bestPolicyId = policyIds[0];
+        if (gap.policy_name) {
+          var matchedPolicy = policies.find(function(p) { return p.policy_name.toLowerCase().includes(gap.policy_name.toLowerCase()) || gap.policy_name.toLowerCase().includes(p.policy_name.toLowerCase()); });
+          if (matchedPolicy) bestPolicyId = matchedPolicy.policy_id;
+        }
+        if (!gap.policy_name && gap.description) {
+          // Try to match gap description keywords to policy names
+          for (var pi = 0; pi < policies.length; pi++) {
+            var pName = policies[pi].policy_name.toLowerCase();
+            var gDesc = (gap.description + ' ' + (gap.requirement || '')).toLowerCase();
+            if ((pName.includes('transaction') && gDesc.includes('transaction')) ||
+                (pName.includes('kyc') && gDesc.includes('kyc')) ||
+                (pName.includes('sanctions') && gDesc.includes('sanction')) ||
+                (pName.includes('wire') && gDesc.includes('wire')) ||
+                (pName.includes('record') && gDesc.includes('record')) ||
+                (pName.includes('privacy') && gDesc.includes('data')) ||
+                (pName.includes('cyber') && gDesc.includes('cyber')) ||
+                (pName.includes('credit') && gDesc.includes('credit')) ||
+                (pName.includes('green') && gDesc.includes('green')) ||
+                (pName.includes('third-party') && gDesc.includes('vendor')) ||
+                (pName.includes('wholesale') && gDesc.includes('wholesale')) ||
+                (pName.includes('str') && gDesc.includes('suspicious'))) {
+              bestPolicyId = policies[pi].policy_id;
+              break;
+            }
+          }
+        }
+
         var [insertResult] = await pool.query(
           'INSERT INTO compliance_gaps (reg_id, policy_id, gap_description) VALUES (?, ?, ?)',
-          [primaryRegId, primaryPolicyId, desc]
+          [primaryRegId, bestPolicyId, desc]
         );
+
+        // Find the policy name for the event
+        var linkedPolicy = policies.find(function(p) { return p.policy_id === bestPolicyId; }) || policies[0];
 
         // Emit gap.created for dispatcher (auto-task creation)
         eventBus.emit('gap.created', {
           gap_id: insertResult.insertId,
           reg_id: primaryRegId,
-          policy_id: primaryPolicyId,
+          policy_id: bestPolicyId,
           regulation_title: regulations[0].title,
-          policy_name: policies[0].policy_name,
+          policy_name: linkedPolicy.policy_name,
           description: desc,
           gap_type: gap.gap_type || 'Missing Procedure',
           severity: gap.severity || 'Medium',
@@ -369,17 +400,41 @@ async function handleNewRegulation(data) {
       desc += ' [Severity: ' + (gap.severity || 'Medium') + ']';
       if (gap.recommendation) desc += ' | Recommendation: ' + gap.recommendation;
 
+      // Link gap to the most relevant policy based on gap content
+      var bestPolicyId = policies[0].policy_id;
+      var gDesc = (gap.description + ' ' + (gap.requirement || '')).toLowerCase();
+      for (var pi = 0; pi < policies.length; pi++) {
+        var pName = policies[pi].policy_name.toLowerCase();
+        if ((pName.includes('transaction') && gDesc.includes('transaction')) ||
+            (pName.includes('kyc') && gDesc.includes('kyc')) ||
+            (pName.includes('sanctions') && gDesc.includes('sanction')) ||
+            (pName.includes('wire') && gDesc.includes('wire')) ||
+            (pName.includes('record') && gDesc.includes('record')) ||
+            (pName.includes('privacy') && gDesc.includes('data')) ||
+            (pName.includes('cyber') && gDesc.includes('cyber')) ||
+            (pName.includes('credit') && gDesc.includes('credit')) ||
+            (pName.includes('green') && gDesc.includes('green')) ||
+            (pName.includes('third-party') && gDesc.includes('vendor')) ||
+            (pName.includes('wholesale') && gDesc.includes('wholesale')) ||
+            (pName.includes('str') && gDesc.includes('suspicious'))) {
+          bestPolicyId = policies[pi].policy_id;
+          break;
+        }
+      }
+
+      var linkedPolicy = policies.find(function(p) { return p.policy_id === bestPolicyId; }) || policies[0];
+
       var [result] = await pool.query(
         'INSERT INTO compliance_gaps (reg_id, policy_id, gap_description) VALUES (?, ?, ?)',
-        [data.reg_id, policies[0].policy_id, desc]
+        [data.reg_id, bestPolicyId, desc]
       );
 
       eventBus.emit('gap.created', {
         gap_id: result.insertId,
         reg_id: data.reg_id,
-        policy_id: policies[0].policy_id,
+        policy_id: bestPolicyId,
         regulation_title: data.title,
-        policy_name: policies[0].policy_name,
+        policy_name: linkedPolicy.policy_name,
         description: desc,
         gap_type: gap.gap_type || 'Missing Procedure',
         severity: gap.severity || 'Medium',
