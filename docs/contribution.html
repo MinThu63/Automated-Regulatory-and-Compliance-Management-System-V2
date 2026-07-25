@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GLDB Project Gantt Chart</title>
+<style>
+body { font-family: 'Calibri', sans-serif; font-size: 9pt; margin: 20px; }
+table { border-collapse: collapse; width: 100%; }
+th { background: #2e75b6; color: white; padding: 4px 6px; text-align: left; border: 1px solid #2e75b6; font-size: 9pt; }
+td { border: 1px solid #bfbfbf; padding: 3px 6px; vertical-align: middle; font-size: 9pt; }
+.sprint-row { background: #d6e4f0; font-weight: bold; }
+.sprint-row td { border: 1px solid #2e75b6; }
+h1 { font-size: 14pt; text-align: center; }
+</style>
+</head>
+<body>
+<h1>Project Gantt Chart — GLDB Compliance System</h1>
+<table>
+<tr><th></th><th>Task Name</th><th>Duration</th><th>Start</th><th>Finish</th><th>Predecessors</th><th>Resource Names</th></tr>
+
+<tr class="sprint-row"><td>1</td><td>SPRINT 1: Backend & System Setup</td><td>5 days</td><td>05/11/26</td><td>05/15/26</td><td></td><td></td></tr>
+<tr><td>2</td><td>[US-20] Project setup: Express, MySQL, routes</td><td>1 day</td><td>05/11/26</td><td>05/11/26</td><td></td><td>Min Thu</td></tr>
+<tr><td>3</td><td>[US-1] Feed integrator: MAS scraping</td><td>2 days</td><td>05/11/26</td><td>05/13/26</td><td>2</td><td>Min Thu</td></tr>
+<tr><td>4</td><td>[US-2] Change detection & version comparison</td><td>2 days</td><td>05/13/26</td><td>05/14/26</td><td>3</td><td>Min Thu</td></tr>
+<tr><td>5</td><td>[RAG] RAG pipeline (Pinecone + embeddings)</td><td>2 days</td><td>05/14/26</td><td>05/15/26</td><td>3</td><td>Min Thu</td></tr>
+<tr><td>6</td><td>[PII] PII filter service</td><td>2 days</td><td>05/14/26</td><td>05/15/26</td><td>8</td><td>Min Thu</td></tr>
+<tr><td>7</td><td>[LLM] LLM audit logging</td><td>1 day</td><td>05/15/26</td><td>05/15/26</td><td>5</td><td>Min Thu</td></tr>
+<tr><td>8</td><td>[US-3] Impact assessment (LLM)</td><td>2 days</td><td>05/12/26</td><td>05/13/26</td><td>2</td><td>Eaint</td></tr>
+<tr><td>9</td><td>[US-4] Alert generation & severity</td><td>1 day</td><td>05/14/26</td><td>05/14/26</td><td>8</td><td>Eaint</td></tr>
+<tr><td>10</td><td>[US-8] Dashboard summary API</td><td>2 days</td><td>05/14/26</td><td>05/15/26</td><td>9</td><td>Eaint</td></tr>
+<tr><td>11</td><td>[US-14] Regulatory sources API</td><td>2 days</td><td>05/11/26</td><td>05/12/26</td><td></td><td>Hsu</td></tr>
+<tr><td>12</td><td>[US-15] Regulations API (CRUD)</td><td>3 days</td><td>05/11/26</td><td>05/13/26</td><td>11</td><td>Hsu</td></tr>
+<tr><td>13</td><td>[US-19] Audit trail API</td><td>1 day</td><td>05/14/26</td><td>05/14/26</td><td>12</td><td>Hsu</td></tr>
+<tr><td>14</td><td>[US-18] Internal policies API</td><td>2 days</td><td>05/11/26</td><td>05/12/26</td><td></td><td>Kay</td></tr>
+<tr><td>15</td><td>[US-9] Tasks API (CRUD)</td><td>3 days</td><td>05/11/26</td><td>05/13/26</td><td></td><td>Kay</td></tr>
+<tr><td>16</td><td>[US-12] Compliance gaps API</td><td>2 days</td><td>05/13/26</td><td>05/14/26</td><td>12,14</td><td>Kay</td></tr>
+
+<tr class="sprint-row"><td>17</td><td>SPRINT 2: Frontend & Dashboard Views</td><td>4 days</td><td>05/18/26</td><td>05/21/26</td><td>1</td><td></td></tr>
+<tr><td>18</td><td>[US-20] Sidebar + login + view switching</td><td>2 days</td><td>05/18/26</td><td>05/19/26</td><td></td><td>Min Thu</td></tr>
+<tr><td>19</td><td>[US-14/15] Sources + Regulations view</td><td>3 days</td><td>05/18/26</td><td>05/20/26</td><td></td><td>Min Thu</td></tr>
+<tr><td>20</td><td>[US-18/19] Policies + Audit trail view</td><td>2 days</td><td>05/20/26</td><td>05/21/26</td><td>18</td><td>Min Thu</td></tr>
+<tr><td>21</td><td>[US-5] Alerts view (badges, cards)</td><td>2 days</td><td>05/18/26</td><td>05/19/26</td><td></td><td>Eaint</td></tr>
+<tr><td>22</td><td>[US-6] Alert status update</td><td>1 day</td><td>05/19/26</td><td>05/20/26</td><td>21</td><td>Eaint</td></tr>
+<tr><td>23</td><td>[US-7] Alert filtering (client-side)</td><td>1 day</td><td>05/20/26</td><td>05/20/26</td><td>21</td><td>Eaint</td></tr>
+<tr><td>24</td><td>[US-8] Reports view (Chart.js, tabs)</td><td>3 days</td><td>05/18/26</td><td>05/20/26</td><td></td><td>Kay</td></tr>
+<tr><td>25</td><td>[US-10/11] Tasks view (form + status)</td><td>2 days</td><td>05/18/26</td><td>05/19/26</td><td></td><td>Kay</td></tr>
+<tr><td>26</td><td>[US-13] Gaps view (CRUD + status)</td><td>2 days</td><td>05/18/26</td><td>05/19/26</td><td></td><td>Hsu</td></tr>
+<tr><td>27</td><td>[US-16/17] Changes & Impact view</td><td>2 days</td><td>05/19/26</td><td>05/20/26</td><td>26</td><td>Hsu</td></tr>
+
+<tr class="sprint-row"><td>28</td><td>SPRINT 3: Additional Features & Mid-Term</td><td>4 days</td><td>05/25/26</td><td>05/28/26</td><td>17</td><td></td></tr>
+<tr><td>29</td><td>[US-22] CSV export</td><td>1 day</td><td>05/25/26</td><td>05/25/26</td><td></td><td>Eaint</td></tr>
+<tr><td>30</td><td>[US-20] Dark mode toggle</td><td>1 day</td><td>05/25/26</td><td>05/25/26</td><td></td><td>Hsu</td></tr>
+<tr><td>31</td><td>[US-20] Pagination all tables</td><td>2 days</td><td>05/25/26</td><td>05/26/26</td><td></td><td>Hsu</td></tr>
+<tr><td>32</td><td>Print report functionality</td><td>1 day</td><td>05/25/26</td><td>05/25/26</td><td></td><td>Kay</td></tr>
+<tr><td>33</td><td>Integration testing (full pipeline)</td><td>2 days</td><td>05/26/26</td><td>05/27/26</td><td>29,30,31</td><td>Min Thu</td></tr>
+<tr><td>34</td><td>Bug fixes + UI polish</td><td>2 days</td><td>05/27/26</td><td>05/28/26</td><td>33</td><td>Min Thu</td></tr>
+<tr><td>35</td><td>Mid-term demo preparation</td><td>1 day</td><td>05/28/26</td><td>05/28/26</td><td>34</td><td>All</td></tr>
+<tr style="background:#ffd700;font-weight:bold;"><td>★</td><td>📌 MILESTONE: Meeting 5 — Deliver Sprint 1-3 (Backend + Frontend + Polish)</td><td>0 days</td><td>05/28/26</td><td>05/28/26</td><td>35</td><td>All</td></tr>
+
+<tr class="sprint-row"><td>36</td><td>SPRINT 4: AI Agent Enhancement & Smart Pipeline</td><td>5 days</td><td>07/06/26</td><td>07/10/26</td><td></td><td></td></tr>
+<tr><td>37</td><td>[US-3] Assessor: 3-step AI pipeline (Classify→Assess→Verify), penalty detection</td><td>3 days</td><td>07/06/26</td><td>07/08/26</td><td></td><td>Min Thu</td></tr>
+<tr><td>38</td><td>[US-7] Analyzer: AI policy selection, cluster gap analysis, 5 gap types</td><td>3 days</td><td>07/06/26</td><td>07/08/26</td><td></td><td>Min Thu</td></tr>
+<tr><td>39</td><td>[US-9] Dispatcher: category grouping, consolidated LLM tasks, task_alerts linkage</td><td>2 days</td><td>07/08/26</td><td>07/09/26</td><td>37</td><td>Min Thu</td></tr>
+<tr><td>40</td><td>EventBus + Orchestrator agent coordination</td><td>1 day</td><td>07/06/26</td><td>07/06/26</td><td></td><td>Min Thu</td></tr>
+<tr><td>41</td><td>[US-12] Advisor: policy proposals with PROCEDURES, Accept/Reject</td><td>2 days</td><td>07/06/26</td><td>07/07/26</td><td></td><td>Eaint</td></tr>
+<tr><td>42</td><td>[US-18] Notifier: email digest buffer, Gmail SMTP, manual trigger</td><td>2 days</td><td>07/07/26</td><td>07/08/26</td><td>41</td><td>Eaint</td></tr>
+<tr><td>43</td><td>[US-11] Policies: card layout, expandable procedures, AI badge, version history</td><td>2 days</td><td>07/06/26</td><td>07/07/26</td><td></td><td>Hsu</td></tr>
+<tr><td>44</td><td>[US-5] Alerts: department column, bulk actions, relative time, email button</td><td>2 days</td><td>07/06/26</td><td>07/07/26</td><td></td><td>Kay</td></tr>
+<tr><td>45</td><td>Sprint 4 integration test & bug fix</td><td>2 days</td><td>07/09/26</td><td>07/10/26</td><td>39,42,43,44</td><td>Min Thu</td></tr>
+
+<tr class="sprint-row"><td>46</td><td>SPRINT 5: Change Detection, PDF Upload, URL Scraping & Reports</td><td>5 days</td><td>07/13/26</td><td>07/17/26</td><td></td><td></td></tr>
+<tr><td>47</td><td>[US-6] Changes & Impact: 5 cards, 4 filters, View Diff, penalty badge, auto-task</td><td>3 days</td><td>07/13/26</td><td>07/15/26</td><td></td><td>Min Thu</td></tr>
+<tr><td>48</td><td>[US-13] PDF upload: pdf-parse, smart version detection, full pipeline trigger</td><td>2 days</td><td>07/13/26</td><td>07/14/26</td><td></td><td>Min Thu</td></tr>
+<tr><td>49</td><td>[US-14] URL scraping: Puppeteer headless, smart version detect, category datalist</td><td>2 days</td><td>07/14/26</td><td>07/15/26</td><td>48</td><td>Min Thu</td></tr>
+<tr><td>50</td><td>[US-16] Reports: 4 sub-tabs, KPI cards, Chart.js, compliance score, heatmap</td><td>3 days</td><td>07/13/26</td><td>07/15/26</td><td></td><td>Eaint</td></tr>
+<tr><td>51</td><td>[US-15] Regulations: filters, detail panel, related items, export CSV</td><td>2 days</td><td>07/13/26</td><td>07/14/26</td><td></td><td>Hsu</td></tr>
+<tr><td>52</td><td>[US-19] Home page: branding, stats, Go to Dashboard, GLDB logo returns home</td><td>1 day</td><td>07/14/26</td><td>07/14/26</td><td>51</td><td>Hsu</td></tr>
+<tr><td>53</td><td>[US-10] Tasks: linkage badges (🔗 gaps, 📋 changes), navigate to related items</td><td>2 days</td><td>07/13/26</td><td>07/14/26</td><td></td><td>Kay</td></tr>
+<tr><td>54</td><td>[US-8] Gaps: 5 type filters, progress bar, Create Task modal</td><td>2 days</td><td>07/14/26</td><td>07/15/26</td><td>53</td><td>Kay</td></tr>
+<tr><td>55</td><td>Sprint 5 integration test & bug fix</td><td>2 days</td><td>07/16/26</td><td>07/17/26</td><td>47,49,50,52,54</td><td>Min Thu</td></tr>
+<tr style="background:#ffd700;font-weight:bold;"><td>★</td><td>📌 MILESTONE: Meeting 8 — Deliver Sprint 4-5 (AI Agents + PDF/URL + Reports)</td><td>0 days</td><td>07/15/26</td><td>07/15/26</td><td>55</td><td>All</td></tr>
+
+<tr class="sprint-row"><td>56</td><td>SPRINT 6: Testing, UI Polish, Deployment & Documentation</td><td>5 days</td><td>07/20/26</td><td>07/24/26</td><td></td><td></td></tr>
+<tr><td>57</td><td>[US-17] Audit Trail: summary cards, agent breakdown, Timeline, Response Chain</td><td>2 days</td><td>07/20/26</td><td>07/21/26</td><td></td><td>Min Thu</td></tr>
+<tr><td>58</td><td>[US-20] UI: collapsible sidebar, consistent tables, sticky sidebar, font size</td><td>1 day</td><td>07/21/26</td><td>07/21/26</td><td>57</td><td>Min Thu</td></tr>
+<tr><td>59</td><td>Full lifecycle test: PDF upload → Assess → Gaps → Tasks → Remediate</td><td>2 days</td><td>07/21/26</td><td>07/22/26</td><td>58</td><td>Min Thu</td></tr>
+<tr><td>60</td><td>Test penalty detection + PENALTY badge + 3-day deadline</td><td>1 day</td><td>07/20/26</td><td>07/20/26</td><td></td><td>Eaint</td></tr>
+<tr><td>61</td><td>Test email notification: digest format, Gmail delivery, Render URL link</td><td>1 day</td><td>07/20/26</td><td>07/20/26</td><td></td><td>Eaint</td></tr>
+<tr><td>62</td><td>Test View Diff: upload old + new PDF, verify comparison</td><td>1 day</td><td>07/20/26</td><td>07/20/26</td><td></td><td>Hsu</td></tr>
+<tr><td>63</td><td>Test Response Chain + Audit Report print</td><td>1 day</td><td>07/20/26</td><td>07/20/26</td><td></td><td>Hsu</td></tr>
+<tr><td>64</td><td>Test URL scraping (Puppeteer) on Render</td><td>1 day</td><td>07/20/26</td><td>07/20/26</td><td></td><td>Kay</td></tr>
+<tr><td>65</td><td>Render deployment: env vars, test production, verify all features</td><td>2 days</td><td>07/22/26</td><td>07/23/26</td><td>59</td><td>Min Thu</td></tr>
+<tr><td>66</td><td>Generate test specification (72 cases), execute tests, screenshots</td><td>2 days</td><td>07/22/26</td><td>07/23/26</td><td>60,61,62,63,64</td><td>All</td></tr>
+<tr><td>67</td><td>Update README, product backlog, architecture, user journey</td><td>1 day</td><td>07/23/26</td><td>07/23/26</td><td>65</td><td>Min Thu</td></tr>
+<tr><td>68</td><td>Final presentation & demo preparation</td><td>1 day</td><td>07/24/26</td><td>07/24/26</td><td>66,67</td><td>All</td></tr>
+<tr style="background:#ffd700;font-weight:bold;"><td>★</td><td>📌 MILESTONE: Meeting 9 — Deliver Sprint 6 (Testing + Deployment + Documentation)</td><td>0 days</td><td>07/23/26</td><td>07/23/26</td><td>68</td><td>All</td></tr>
+</table>
+</body>
+</html>

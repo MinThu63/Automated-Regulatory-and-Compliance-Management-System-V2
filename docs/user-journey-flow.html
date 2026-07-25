@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLDB — User Journey Flow</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8fafc; color: #1e293b; padding: 40px 20px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    h1 { text-align: center; font-size: 1.8rem; margin-bottom: 6px; }
+    .subtitle { text-align: center; color: #64748b; margin-bottom: 40px; }
+
+    .flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+
+    .node { background: #fff; border: 2px solid #e2e8f0; border-radius: 14px; padding: 18px 28px; max-width: 520px; width: 100%; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .node:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-1px); transition: all 0.2s; }
+    .node-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+    .node-desc { font-size: 0.82rem; color: #475569; line-height: 1.5; }
+    .node-action { margin-top: 8px; font-size: 0.75rem; color: #0369a1; font-weight: 600; background: #e0f2fe; padding: 4px 10px; border-radius: 6px; display: inline-block; }
+
+    .node-start { border-color: #10b981; background: #ecfdf5; }
+    .node-decision { border-color: #f59e0b; background: #fffbeb; border-radius: 14px; border-style: dashed; }
+    .node-critical { border-color: #ef4444; background: #fef2f2; }
+    .node-action-step { border-color: #3b82f6; background: #eff6ff; }
+    .node-end { border-color: #8b5cf6; background: #f5f3ff; }
+
+    .arrow { display: flex; flex-direction: column; align-items: center; padding: 6px 0; }
+    .arrow-line { width: 2px; height: 22px; background: #94a3b8; }
+    .arrow-head { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #94a3b8; }
+    .arrow-label { font-size: 0.7rem; color: #64748b; margin-top: 2px; font-style: italic; }
+
+    .branch { display: flex; gap: 20px; align-items: flex-start; width: 100%; max-width: 700px; justify-content: center; }
+    .branch-path { display: flex; flex-direction: column; align-items: center; gap: 0; flex: 1; }
+    .branch-label { font-size: 0.72rem; font-weight: 700; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .phase-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; font-weight: 700; margin: 20px 0 10px; text-align: center; }
+
+    .icon { font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>User Journey Flow — Compliance Officer</h1>
+  <p class="subtitle">How a compliance officer interacts with the GLDB system from login to remediation</p>
+
+  <div class="flow">
+
+    <!-- START -->
+    <div class="node node-start">
+      <div class="node-title"><span class="icon">🔑</span> Login</div>
+      <div class="node-desc">Officer opens <code>localhost:3000</code>, enters credentials (email + password). System authenticates and loads dashboard with unread alert count.</div>
+      <div class="node-action">Action: Enter email → Click "Sign In"</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- ALERTS -->
+    <div class="node">
+      <div class="node-title"><span class="icon">🔔</span> Review Alerts</div>
+      <div class="node-desc">Dashboard shows summary cards (Total / Unread / Immediate / Review / Info). Officer scans severity badges, department assignments, and how long ago each alert was created.</div>
+      <div class="node-action">Action: Filter by severity → Scan unread alerts</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div><span class="arrow-label">Clicks "View Change" on Critical alert</span></div>
+
+    <!-- CHANGES & IMPACT -->
+    <div class="node node-critical">
+      <div class="node-title"><span class="icon">📋</span> Investigate Regulatory Change</div>
+      <div class="node-desc">Changes & Impact tab shows the specific change. Officer sees: regulation title, impact level (Critical with ⚠️ PENALTY badge), affected areas, compliance deadline, and change summary.</div>
+      <div class="node-action">Action: Read summary → Click "View Diff"</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- VIEW DIFF -->
+    <div class="node node-action-step">
+      <div class="node-title"><span class="icon">🔍</span> Compare Old vs New Version</div>
+      <div class="node-desc">Side-by-side comparison panel opens. Left = Previous Version, Right = Current Version. Structured diff shows ➕ Added / ➖ Removed / ✏️ Modified sections. Officer understands exactly what changed.</div>
+      <div class="node-action">Action: Read diff → Understand scope of change</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div><span class="arrow-label">Checks Task column</span></div>
+
+    <!-- DECISION -->
+    <div class="node node-decision">
+      <div class="node-title"><span class="icon">❓</span> Was a task auto-created?</div>
+      <div class="node-desc">For Critical/High changes, the Dispatcher agent should have auto-created a task. Officer checks the "Task" column for status.</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line" style="height:10px;"></div></div>
+
+    <!-- BRANCH -->
+    <div class="branch">
+      <div class="branch-path">
+        <span class="branch-label">✅ Yes — Auto-task exists</span>
+        <div class="node" style="max-width:300px;">
+          <div class="node-title"><span class="icon">👁️</span> View Task</div>
+          <div class="node-desc">Click "View" → navigates to Tasks tab. Task shows linked regulatory changes (📋 badge).</div>
+          <div class="node-action">Action: Click "View" button</div>
+        </div>
+      </div>
+      <div class="branch-path">
+        <span class="branch-label">❌ No — Medium/Low only</span>
+        <div class="node" style="max-width:300px;">
+          <div class="node-title"><span class="icon">➕</span> Create Task Manually</div>
+          <div class="node-desc">Click "+ Create" → pre-fills task form with regulation title + department.</div>
+          <div class="node-action">Action: Click "+ Create" → Submit</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- TASKS -->
+    <div class="node">
+      <div class="node-title"><span class="icon">✅</span> Manage Tasks</div>
+      <div class="node-desc">Tasks tab shows all remediation work. Each task has clickable badges: 🔗 linked gaps, 📋 linked changes. Officer updates status as work progresses: Pending → In Progress → Completed.</div>
+      <div class="node-action">Action: Update status dropdown → "In Progress"</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div><span class="arrow-label">Navigates to Gaps tab (via 🔗 badge)</span></div>
+
+    <!-- GAPS -->
+    <div class="node">
+      <div class="node-title"><span class="icon">⚠️</span> Review Compliance Gaps</div>
+      <div class="node-desc">Gaps tab shows AI-identified gaps with type classification (Missing Procedure / Insufficient Detail / Missing Control / etc.), severity, and linked task status. Progress bar shows remediation %.</div>
+      <div class="node-action">Action: Filter by type/severity → Review gap details</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- POLICIES -->
+    <div class="node node-action-step">
+      <div class="node-title"><span class="icon">📜</span> Policy Governance</div>
+      <div class="node-desc">Policies tab shows 15 internal policies as cards. Officer clicks "View Procedures" to see step-by-step actions. "AI Proposals" sub-tab shows pending AI-drafted policy changes with procedures + reasoning.</div>
+      <div class="node-action">Action: Review proposal → Click "✅ Accept & Apply" or "❌ Reject"</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div><span class="arrow-label">Accepting auto-versions old policy</span></div>
+
+    <div class="phase-label">— Remediation Complete —</div>
+
+    <!-- COMPLETE TASK -->
+    <div class="node node-start">
+      <div class="node-title"><span class="icon">🎯</span> Mark Task Completed</div>
+      <div class="node-desc">Officer marks task as "Completed". System automatically updates ALL linked gaps to "Remediated" status. Compliance score improves in Reports tab.</div>
+      <div class="node-action">Action: Status dropdown → "Completed"</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- REPORTS -->
+    <div class="node">
+      <div class="node-title"><span class="icon">📊</span> Generate Reports</div>
+      <div class="node-desc">Reports tab: 4 sub-tabs (Regulatory Changes, Gap Analysis, Tasks & Remediation, Compliance Posture). Officer reviews compliance score %, policy heatmap, and gap resolution trends. Prints report for management.</div>
+      <div class="node-action">Action: Review charts → Click "🖨️ Print Report"</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- AUDIT -->
+    <div class="node">
+      <div class="node-title"><span class="icon">📑</span> Verify Audit Trail</div>
+      <div class="node-desc">Audit Trail shows every action (AI + Human). Officer switches to "Response Chain" view, selects a regulation, and sees the complete evidence trail: Scraped → Assessed → Gaps → Tasks → Remediated. Printable for MAS inspection.</div>
+      <div class="node-action">Action: Select regulation → View full chain → Print audit report</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- EMAIL -->
+    <div class="node">
+      <div class="node-title"><span class="icon">📧</span> Send Email Digest</div>
+      <div class="node-desc">Officer presses "Send Test Alert Email" button. ONE summary email is sent to Gmail with all Critical/High alerts consolidated in a formatted table. Used for stakeholder communication.</div>
+      <div class="node-action">Action: Click "📧 Send Test Alert Email"</div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- END -->
+    <div class="node node-end">
+      <div class="node-title"><span class="icon">♻️</span> Cycle Repeats</div>
+      <div class="node-desc">System continues monitoring 24/7. Next automated scan in 2 weeks (or manual "Run Scraper" button). Any new regulatory changes restart the journey from the top — alerts appear, tasks are created, gaps are identified.</div>
+    </div>
+
+  </div>
+
+  <div style="text-align:center; margin-top:50px; color:#94a3b8; font-size:0.75rem;">
+    Green Link Digital Bank • Compliance Portal • User Journey Flow Diagram © 2026
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Project Gantt Chart</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; font-size: 10px; padding: 20px; background: #fff; }
+h1 { font-size: 13px; text-align: center; margin-bottom: 16px; color: #333; }
+.gantt { display: grid; grid-template-columns: 240px 1fr; border: 1px solid #ddd; }
+.tasks { border-right: 1px solid #ccc; }
+.task-row { height: 22px; display: flex; align-items: center; padding: 0 8px; border-bottom: 1px solid #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-row.sprint { background: #1a1a2e; color: #ffd700; font-weight: bold; font-size: 10px; }
+.timeline { position: relative; overflow: hidden; }
+.timeline-row { height: 22px; position: relative; border-bottom: 1px solid #eee; }
+.timeline-row.sprint { background: #1a1a2e; }
+.bar { position: absolute; height: 12px; top: 5px; border-radius: 3px; min-width: 6px; }
+.bar-minthu { background: #2e75b6; }
+.bar-eaint { background: #e74c3c; }
+.bar-hsu { background: #1abc9c; }
+.bar-kay { background: #f39c12; }
+.bar-all { background: #9b59b6; }
+.bar-sprint { background: #1a1a2e; opacity: 0.9; height: 14px; top: 4px; border-radius: 3px; }
+.sprint-label { position: absolute; color: #ffd700; font-size: 9px; font-weight: bold; top: 3px; left: 4px; }
+.date-header { display: flex; border-bottom: 1px solid #ccc; height: 30px; background: #f8f8f8; }
+.date-col { flex: 1; text-align: center; font-size: 8px; color: #666; border-right: 1px solid #eee; display: flex; flex-direction: column; justify-content: center; }
+.weekend { background: #f0f0f0; }
+.legend { display: flex; gap: 14px; justify-content: flex-end; margin-bottom: 10px; font-size: 10px; }
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-box { width: 12px; height: 8px; border-radius: 2px; }
+.sprint-marker { position: absolute; left: 0; top: 0; background: rgba(255, 215, 0, 0.8); color: #000; font-weight: bold; font-size: 14px; padding: 2px 6px; z-index: 10; }
+</style>
+</head>
+<body>
+<h1>Project Gantt Chart — Strict Sprint Timeline (May 11 – Jul 24, 2026)</h1>
+<div class="legend">
+<div class="legend-item"><div class="legend-box" style="background:#1a1a2e;"></div> Sprint Phase</div>
+<div class="legend-item"><div class="legend-box" style="background:#2e75b6;"></div> Min Thu</div>
+<div class="legend-item"><div class="legend-box" style="background:#e74c3c;"></div> Eaint</div>
+<div class="legend-item"><div class="legend-box" style="background:#1abc9c;"></div> Hsu</div>
+<div class="legend-item"><div class="legend-box" style="background:#f39c12;"></div> Kay</div>
+<div class="legend-item"><div class="legend-box" style="background:#9b59b6;"></div> All</div>
+</div>
+<div class="gantt">
+<div class="tasks">
+<div class="task-row" style="height:30px;font-weight:bold;background:#f8f8f8;">Task Name</div>
+<!-- Sprint 1 Tasks -->
+<div class="task-row sprint">SPRINT 1: BACKEND & SYSTEM SETUP</div>
+<div class="task-row">[US-20] Project setup: Express, MySQL, routes</div>
+<div class="task-row">[US-1] Feed integrator: MAS scraping</div>
+<div class="task-row">[US-2] Change detection & version comparison</div>
+<div class="task-row">[RAG] Pinecone pipeline + embeddings</div>
+<div class="task-row">[PII] PII filter service</div>
+<div class="task-row">[LLM] LLM audit logging</div>
+<div class="task-row">[US-3] Impact assessment (LLM)</div>
+<div class="task-row">[US-4] Alert generation & severity</div>
+<div class="task-row">[US-8] Dashboard summary API</div>
+<div class="task-row">[US-14] Regulatory sources API</div>
+<div class="task-row">[US-15] Regulations API (CRUD)</div>
+<div class="task-row">[US-19] Audit trail API</div>
+<div class="task-row">[US-18] Internal policies API</div>
+<div class="task-row">[US-9] Tasks API (CRUD)</div>
+<div class="task-row">[US-12] Compliance gaps API</div>
+<!-- Sprint 2 Tasks -->
+<div class="task-row sprint">SPRINT 2: FRONTEND & DASHBOARD VIEWS</div>
+<div class="task-row">[US-20] Sidebar + login + view switching</div>
+<div class="task-row">[US-14/15] Sources + Regulations view</div>
+<div class="task-row">[US-18/19] Policies + Audit trail view</div>
+<div class="task-row">[US-5] Alerts view (badges, cards)</div>
+<div class="task-row">[US-6] Alert status update</div>
+<div class="task-row">[US-7] Alert filtering (client-side)</div>
+<div class="task-row">[US-8] Reports view (5 tabs, charts)</div>
+<div class="task-row">[US-10] Tasks view - add form</div>
+<div class="task-row">[US-11] Tasks - status + delete</div>
+<div class="task-row">[US-13] Gaps view (CRUD, status)</div>
+<div class="task-row">[US-16] Changes view (impact badges)</div>
+<div class="task-row">[US-17] Impact dashboard (cards, sort)</div>
+<!-- Sprint 3 Tasks -->
+<div class="task-row sprint">SPRINT 3: FEATURES, TESTING & POLISH</div>
+<div class="task-row">[US-22] CSV export</div>
+<div class="task-row">[US-24] Print compliance report</div>
+<div class="task-row">[US-20] Dark mode + persistence</div>
+<div class="task-row">[US-25] Pagination (all tables)</div>
+<div class="task-row">Test: Alerts</div>
+<div class="task-row">Test: Tasks</div>
+<div class="task-row">Test: Gaps, policies, regulations</div>
+<div class="task-row">Test: Feed integrator</div>
+<div class="task-row">Bug fixes + UI polish</div>
+<div class="task-row">Full integration test</div>
+<div class="task-row">Demo preparation</div>
+<div class="task-row" style="background:#ffd700;font-weight:bold;">📌 MILESTONE: Meeting 5 (28/05/26) — Deliver Sprint 1-3</div>
+<!-- Sprint 4 Tasks -->
+<div class="task-row sprint">SPRINT 4: AI AGENT ENHANCEMENT</div>
+<div class="task-row">[US-3] Assessor: 3-step AI + penalty</div>
+<div class="task-row">[US-7] Analyzer: AI policy select + 5 types</div>
+<div class="task-row">[US-9] Dispatcher: category grouping + LLM</div>
+<div class="task-row">[US-12] Advisor: proposals + PROCEDURES</div>
+<div class="task-row">[US-18] Notifier: email digest + Gmail</div>
+<div class="task-row">[US-11] Policies: cards + AI badge + history</div>
+<div class="task-row">[US-5] Alerts: dept, bulk, email button</div>
+<div class="task-row">EventBus + Orchestrator</div>
+<!-- Sprint 5 Tasks -->
+<div class="task-row sprint">SPRINT 5: CHANGE DETECT, PDF, URL, REPORTS</div>
+<div class="task-row">[US-6] Changes & Impact: diff + penalty</div>
+<div class="task-row">[US-13] PDF upload + version detect</div>
+<div class="task-row">[US-14] URL scrape (Puppeteer)</div>
+<div class="task-row">[US-16] Reports: 4 tabs + heatmap</div>
+<div class="task-row">[US-15] Regulations KB + detail panel</div>
+<div class="task-row">[US-19] Home page + branding</div>
+<div class="task-row">[US-10/8] Tasks linkage + Gaps filters</div>
+<div class="task-row" style="background:#ffd700;font-weight:bold;">📌 MILESTONE: Meeting 8 (15/07/26) — Deliver Sprint 4-5</div>
+<!-- Sprint 6 Tasks -->
+<div class="task-row sprint">SPRINT 6: TESTING & DOCUMENTATION</div>
+<div class="task-row">[US-17] Audit Trail: timeline + chain</div>
+<div class="task-row">[US-20] UI: sidebar toggle + tables</div>
+<div class="task-row">Full lifecycle test</div>
+<div class="task-row">Test penalty + email + diff</div>
+<div class="task-row">Render deployment</div>
+<div class="task-row">Test specification (72 cases)</div>
+<div class="task-row">Documentation + presentation</div>
+<div class="task-row" style="background:#ffd700;font-weight:bold;">📌 MILESTONE: Meeting 9 (23/07/26) — Deliver Sprint 6 (Final)</div>
+</div>
+<div class="timeline">
+<div class="date-header">
+<div class="date-col">Mon<br>5/11</div><div class="date-col">Tue<br>5/12</div><div class="date-col">Wed<br>5/13</div><div class="date-col">Thu<br>5/14</div><div class="date-col">Fri<br>5/15</div>
+<div class="date-col weekend">Sat</div><div class="date-col weekend">Sun</div>
+<div class="date-col">Mon<br>5/18</div><div class="date-col">Tue<br>5/19</div><div class="date-col">Wed<br>5/20</div><div class="date-col">Thu<br>5/21</div><div class="date-col">Fri<br>5/22</div>
+<div class="date-col weekend">Sat</div><div class="date-col weekend">Sun</div>
+<div class="date-col">Mon<br>5/25</div><div class="date-col">Tue<br>5/26</div><div class="date-col">Wed<br>5/27</div><div class="date-col">Thu<br>5/28</div><div class="date-col">Fri<br>5/29</div>
+<div class="date-col weekend">Sat</div><div class="date-col weekend">Sun</div>
+<div class="date-col">Mon<br>7/6</div><div class="date-col">Tue<br>7/7</div><div class="date-col">Wed<br>7/8</div><div class="date-col">Thu<br>7/9</div><div class="date-col">Fri<br>7/10</div>
+<div class="date-col weekend">Sat</div><div class="date-col weekend">Sun</div>
+<div class="date-col">Mon<br>7/13</div><div class="date-col">Tue<br>7/14</div><div class="date-col">Wed<br>7/15</div><div class="date-col">Thu<br>7/16</div><div class="date-col">Fri<br>7/17</div>
+<div class="date-col weekend">Sat</div><div class="date-col weekend">Sun</div>
+<div class="date-col">Mon<br>7/20</div><div class="date-col">Tue<br>7/21</div><div class="date-col">Wed<br>7/22</div><div class="date-col">Thu<br>7/23</div><div class="date-col">Fri<br>7/24</div>
+</div>
+<!-- Total days: 5+2+5+2+5+2+5+2+5+2+5 = 40 columns, each ~2.5% width -->
+<!-- Sprint 1: cols 0-4 (days 1-5), Sprint 2: cols 7-11, Sprint 3: cols 14-18, Sprint 4: cols 21-25, Sprint 5: cols 28-32, Sprint 6: cols 35-39 -->
+<!-- Using percentage positioning: each day = 2.5% of total width (40 cols) -->
+
+<!-- S1 Header -->
+<div class="timeline-row sprint"><div class="bar bar-sprint" style="left:0%;width:12.5%;"><span class="sprint-label">5 DAYS</span></div></div>
+<!-- S1 tasks (days 1-5 = 0%-12.5%) -->
+<div class="timeline-row"><div class="bar bar-minthu" style="left:0%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:0%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:5%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:7.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:10%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:2.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:7.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:7.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:0%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:0%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:7.5%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-kay" style="left:0%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-kay" style="left:0%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-kay" style="left:5%;width:5%;"></div></div>
+
+<!-- S2 Header -->
+<div class="timeline-row sprint"><div class="bar bar-sprint" style="left:17.5%;width:12.5%;"><span class="sprint-label">4 DAYS</span></div></div>
+<!-- S2 tasks (days 8-12 = 17.5%-30%) -->
+<div class="timeline-row"><div class="bar bar-minthu" style="left:17.5%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:17.5%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:22.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:17.5%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:22.5%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:22.5%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-kay" style="left:17.5%;width:10%;"></div></div>
+<div class="timeline-row"><div class="bar bar-kay" style="left:17.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-kay" style="left:22.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:17.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:22.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:22.5%;width:5%;"></div></div>
+
+<!-- S3 Header -->
+<div class="timeline-row sprint"><div class="bar bar-sprint" style="left:35%;width:12.5%;"><span class="sprint-label">4 DAYS</span></div></div>
+<!-- S3 tasks (days 15-19 = 35%-47.5%) -->
+<div class="timeline-row"><div class="bar bar-eaint" style="left:35%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-kay" style="left:35%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:35%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:35%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:37.5%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-kay" style="left:37.5%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:37.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:37.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:40%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:42.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-all" style="left:45%;width:2.5%;"></div></div>
+
+<!-- Milestone row (empty) -->
+<div class="timeline-row"></div>
+
+<!-- S4 Header -->
+<div class="timeline-row sprint"><div class="bar bar-sprint" style="left:52.5%;width:12.5%;"><span class="sprint-label">5 DAYS</span></div></div>
+<!-- S4 tasks (days 22-26 = 52.5%-65%) -->
+<div class="timeline-row"><div class="bar bar-minthu" style="left:52.5%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:52.5%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:57.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:52.5%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:57.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:52.5%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-kay" style="left:52.5%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:52.5%;width:2.5%;"></div></div>
+
+<!-- S5 Header -->
+<div class="timeline-row sprint"><div class="bar bar-sprint" style="left:70%;width:12.5%;"><span class="sprint-label">5 DAYS</span></div></div>
+<!-- S5 tasks (days 29-33 = 70%-82.5%) -->
+<div class="timeline-row"><div class="bar bar-minthu" style="left:70%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:72.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:75%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:70%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:70%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-hsu" style="left:72.5%;width:2.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-kay" style="left:70%;width:7.5%;"></div></div>
+
+<!-- Milestone row (empty) -->
+<div class="timeline-row"></div>
+
+<!-- S6 Header -->
+<div class="timeline-row sprint"><div class="bar bar-sprint" style="left:87.5%;width:12.5%;"><span class="sprint-label">5 DAYS</span></div></div>
+<!-- S6 tasks (days 36-40 = 87.5%-100%) -->
+<div class="timeline-row"><div class="bar bar-minthu" style="left:87.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:90%;width:7.5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:92.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-eaint" style="left:87.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-minthu" style="left:92.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-all" style="left:92.5%;width:5%;"></div></div>
+<div class="timeline-row"><div class="bar bar-all" style="left:95%;width:5%;"></div></div>
+
+<!-- Milestone row (empty) -->
+<div class="timeline-row"></div>
+
+</div>
+</div>
+</body>
+</html>
