@@ -212,7 +212,7 @@ npm start
 
 ## Demo
 
-**Live:** https://automated-regulatory-and-compliance-bj0l.onrender.com
+**Live:** [https://automated-regulatory-and-compliance-bj0l.onrender.com](https://automated-regulatory-and-compliance-bjn0.onrender.com/)
 
 **GitHub:** https://github.com/MinThu63/Automated-Regulatory-and-Compliance-Management-System-V2
 
