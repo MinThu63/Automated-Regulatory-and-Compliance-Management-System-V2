@@ -13,12 +13,12 @@ router.get('/', async (req, res) => {
        r.title AS regulation_title, r.content AS regulation_content,
        ip.policy_name, ip.description AS policy_description,
        cg.identified_at, COALESCE(r.source_url, rs.base_url) AS source_url,
-       rc.semantic_differences, rc.impact_score
+       (SELECT rc2.semantic_differences FROM regulation_changes rc2 WHERE rc2.reg_id = cg.reg_id ORDER BY rc2.detected_at DESC LIMIT 1) AS semantic_differences,
+       (SELECT rc3.impact_score FROM regulation_changes rc3 WHERE rc3.reg_id = cg.reg_id ORDER BY rc3.detected_at DESC LIMIT 1) AS impact_score
        FROM compliance_gaps cg 
        JOIN regulations r ON cg.reg_id = r.reg_id
        JOIN internal_policies ip ON cg.policy_id = ip.policy_id
        JOIN regulatory_sources rs ON r.source_id = rs.source_id
-       LEFT JOIN regulation_changes rc ON rc.reg_id = cg.reg_id
        ORDER BY cg.identified_at DESC`
     );
 

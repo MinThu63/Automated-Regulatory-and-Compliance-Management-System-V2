@@ -33,10 +33,10 @@ All of this happens without anyone clicking a button.
 ```
 ├── server.js                  # Express entry point — starts agents + routes
 ├── db.js                      # MySQL connection pool (Azure)
-├── schema.sql                 # Full database schema (11 tables) + seed data
+├── schema.sql                 # Full database schema (13 tables) + seed data
 ├── .env                       # Credentials (DB, OpenAI, Pinecone)
 │
-├── agents/                    # 🤖 Agentic system (6 autonomous agents)
+├── agents/                    # 🤖 Agentic system (7 autonomous agents)
 │   ├── orchestrator.js        # Starts all agents in correct order
 │   ├── eventBus.js            # Shared event channel (Node EventEmitter)
 │   ├── scraper.js             # Scrapes MAS, FATF, FinCEN, ECB, FCA — follows links to fetch full page content
@@ -56,6 +56,7 @@ All of this happens without anyone clicking a button.
 │   ├── gaps.js                # Gap CRUD + AI analysis + gap-to-task linking
 │   ├── sources.js             # Regulatory source CRUD
 │   ├── policies.js            # Policy CRUD (triggers versioning agent)
+│   ├── proposals.js           # AI policy proposals (accept/reject)
 │   └── audit.js               # Filtered audit trail
 │
 ├── services/                  # Shared services (used by agents)
@@ -503,7 +504,7 @@ Assistant:   {"tasks": [
 |-------|-----------|---------|
 | Runtime | Node.js v18+ | Server-side JavaScript |
 | Framework | Express.js | REST API |
-| Database | MySQL (Azure) | 11 tables with foreign keys |
+| Database | MySQL (Azure) | 13 tables with foreign keys |
 | Vector DB | Pinecone (cloud) | Semantic search for RAG pipeline |
 | AI/LLM | OpenAI GPT-4o-mini | Impact assessment + gap analysis |
 | Embeddings | text-embedding-3-small | Converts text to vectors for Pinecone |

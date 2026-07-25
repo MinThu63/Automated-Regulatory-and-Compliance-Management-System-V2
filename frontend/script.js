@@ -1640,10 +1640,23 @@ async function loadGaps() {
       return;
     }
 
-    // Apply filters
-    var statusFilter = document.getElementById('gapStatusFilter') ? document.getElementById('gapStatusFilter').value : '';
-    var severityFilter = document.getElementById('gapSeverityFilter') ? document.getElementById('gapSeverityFilter').value : '';
-    var typeFilter = document.getElementById('gapTypeFilter') ? document.getElementById('gapTypeFilter').value : '';
+    // If navigated from Tasks, show ONLY the target gap(s) — bypass all filters
+    var singleGapMode = false;
+    if (window._scrollToGapIds && window._scrollToGapIds.length > 0) {
+      var targetIds = window._scrollToGapIds.map(function(id) { return parseInt(id); });
+      window._scrollToGapIds = null;
+      var filteredGaps = gaps.filter(function(g) { return targetIds.indexOf(parseInt(g.gap_id)) >= 0; });
+      if (filteredGaps.length > 0) {
+        gaps = filteredGaps;
+        singleGapMode = true;
+      }
+    }
+
+    // Apply filters (only if NOT in single gap mode — navigation overrides filters)
+    if (!singleGapMode) {
+      var statusFilter = document.getElementById('gapStatusFilter') ? document.getElementById('gapStatusFilter').value : '';
+      var severityFilter = document.getElementById('gapSeverityFilter') ? document.getElementById('gapSeverityFilter').value : '';
+      var typeFilter = document.getElementById('gapTypeFilter') ? document.getElementById('gapTypeFilter').value : '';
 
     if (statusFilter) {
       gaps = gaps.filter(function(g) { return g.status === statusFilter; });
@@ -1674,18 +1687,7 @@ async function loadGaps() {
       document.getElementById('gapsPagination').innerHTML = '';
       return;
     }
-
-    // If navigated from Tasks, show ONLY the target gap(s)
-    var singleGapMode = false;
-    if (window._scrollToGapIds && window._scrollToGapIds.length > 0) {
-      var targetIds = window._scrollToGapIds;
-      window._scrollToGapIds = null;
-      var filteredGaps = gaps.filter(function(g) { return targetIds.indexOf(g.gap_id) >= 0; });
-      if (filteredGaps.length > 0) {
-        gaps = filteredGaps;
-        singleGapMode = true;
-      }
-    }
+    } // end if (!singleGapMode)
 
     var GAPS_PER_PAGE = 5;
     var container = document.getElementById('gapsContainer');
