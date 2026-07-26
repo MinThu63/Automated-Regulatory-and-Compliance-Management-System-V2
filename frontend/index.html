@@ -1106,7 +1106,7 @@
         <div class="card shadow-sm mb-3">
           <div class="card-body py-2">
             <div class="row g-2 align-items-center">
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <select id="ciImpactFilter" class="form-select form-select-sm" onchange="filterCI()">
                   <option value="">All Impact Levels</option>
                   <option value="Critical">🔴 Critical</option>
@@ -1115,20 +1115,28 @@
                   <option value="Low">🟢 Low</option>
                 </select>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <select id="ciTaskFilter" class="form-select form-select-sm" onchange="filterCI()">
                   <option value="">All Task Statuses</option>
                   <option value="has_task">⚡ Has Auto-Task</option>
                   <option value="no_task">⚠ No Task Yet</option>
                 </select>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <select id="ciAreaFilter" class="form-select form-select-sm" onchange="filterCI()">
                   <option value="">All Affected Areas</option>
                 </select>
               </div>
-              <div class="col-md-3">
-                <input type="text" class="form-control form-control-sm" id="ciSearchInput" placeholder="Search regulation title or summary…" oninput="filterCI()">
+              <div class="col-md-2">
+                <input type="date" class="form-control form-control-sm" id="ciDateFrom" onchange="filterCI()" title="Start date" placeholder="Start date">
+                <small class="text-muted" style="font-size:0.65rem;">From</small>
+              </div>
+              <div class="col-md-2">
+                <input type="date" class="form-control form-control-sm" id="ciDateTo" onchange="filterCI()" title="End date" placeholder="End date">
+                <small class="text-muted" style="font-size:0.65rem;">To</small>
+              </div>
+              <div class="col-md-2">
+                <input type="text" class="form-control form-control-sm" id="ciSearchInput" placeholder="Search title…" oninput="filterCI()">
               </div>
             </div>
           </div>
@@ -1292,29 +1300,33 @@
           </div>
         </div>
 
-        <!-- Edit Policy Section (hidden by default) -->
-        <div id="editPolicySection" class="d-none">
-          <div class="card shadow-sm mb-4 border-warning">
-            <div class="card-body">
-              <h5 class="card-title">Edit Policy</h5>
-              <div class="row g-3 align-items-end">
-                <div class="col-md-3">
-                  <label for="editPolicyName" class="form-label fw-semibold text-secondary">Policy Name</label>
+        <!-- Edit Policy Modal -->
+        <div class="modal fade" id="editPolicyModal" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">✏️ Edit Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label for="editPolicyName" class="form-label fw-semibold">Policy Name</label>
                   <input type="text" class="form-control" id="editPolicyName">
                 </div>
-                <div class="col-md-5">
-                  <label for="editPolicyDesc" class="form-label fw-semibold text-secondary">Description</label>
-                  <textarea class="form-control" id="editPolicyDesc" rows="2"></textarea>
+                <div class="mb-3">
+                  <label for="editPolicyDesc" class="form-label fw-semibold">Description & Procedures</label>
+                  <textarea class="form-control" id="editPolicyDesc" rows="12" style="font-size:0.9rem;"></textarea>
                 </div>
-                <div class="col-md-4 d-flex align-items-end gap-2">
-                  <button type="button" class="btn btn-warning" id="editPolicyUpdateBtn">Update</button>
-                  <button type="button" class="btn btn-secondary" id="editPolicyCancelBtn">Cancel</button>
-                </div>
+                <input type="hidden" id="editPolicyId">
               </div>
-              <input type="hidden" id="editPolicyId">
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="editPolicyCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-warning" id="editPolicyUpdateBtn">Update Policy</button>
+              </div>
             </div>
           </div>
         </div>
+        <div id="editPolicySection" class="d-none"></div>
 
         <!-- Policies Cards -->
         <div id="policiesContainer" class="row g-3"></div>

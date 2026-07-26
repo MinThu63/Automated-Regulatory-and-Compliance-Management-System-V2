@@ -23,7 +23,6 @@ var BUFFER_DELAY = 30000; // Wait 30 seconds after last alert to send digest
 function handleAlert(data) {
   if (!NOTIFY_ON_IMPACT.includes(data.impact_score)) return;
 
-  // Only buffer — never auto-send. Email is triggered manually via the UI button.
   alertBuffer.push({
     title: data.title,
     impact_score: data.impact_score,
@@ -36,6 +35,15 @@ function handleAlert(data) {
   });
 
   console.log('[' + AGENT_NAME + '] Buffered alert (' + alertBuffer.length + '): ' + data.impact_score + ' — ' + (data.title || '').substring(0, 40));
+
+  // Auto-send digest after buffer delay (resets on each new alert)
+  if (bufferTimer) clearTimeout(bufferTimer);
+  bufferTimer = setTimeout(function() {
+    if (alertBuffer.length > 0) {
+      console.log('[' + AGENT_NAME + '] Auto-triggering digest after ' + (BUFFER_DELAY / 1000) + 's of inactivity...');
+      sendDigest();
+    }
+  }, BUFFER_DELAY);
 }
 
 // =============================================

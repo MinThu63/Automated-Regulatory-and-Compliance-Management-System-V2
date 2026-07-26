@@ -231,6 +231,23 @@ function exportTableCSV(type) {
       csv += row.alert_id + ',"' + (row.title || '').replace(/"/g, '""') + '","' + row.severity_level + '","' + row.status + '"\n';
     });
     downloadCSV(csv, filename);
+  } else if (type === 'regulations') {
+    var csv = 'Reg ID,Title,Category,Source,Version,Published Date,Source URL\n';
+    var table = document.getElementById('regulationsBody');
+    if (window._allRegulations && window._allRegulations.length > 0) {
+      window._allRegulations.forEach(function(row) {
+        csv += row.reg_id + ',"' + (row.title || '').replace(/"/g, '""') + '","' + (row.category || '') + '","' + (row.source_name || '') + '",' + (row.version || '') + ',"' + (row.published_date || '') + '","' + (row.source_url || '') + '"\n';
+      });
+    }
+    downloadCSV(csv, filename);
+  } else if (type === 'changes') {
+    var csv = 'Change ID,Regulation Title,Impact Score,Affected Areas,Detected At\n';
+    if (allCIData && allCIData.length > 0) {
+      allCIData.forEach(function(row) {
+        csv += row.change_id + ',"' + (row.regulation_title || '').replace(/"/g, '""') + '","' + (row.impact_score || '') + '","' + (row.affected_areas || '') + '","' + (row.detected_at || '') + '"\n';
+      });
+    }
+    downloadCSV(csv, filename);
   }
 }
 
@@ -2249,6 +2266,7 @@ async function loadRegulations() {
     if (!response.ok) throw new Error('Server responded with status ' + response.status);
     var result = await response.json();
     var regulations = result.data || result;
+    window._allRegulations = regulations;
     var tbody = document.getElementById('regulationsBody');
     tbody.innerHTML = '';
 
@@ -2659,6 +2677,19 @@ function renderCITable() {
       return (c.regulation_title || '').toLowerCase().includes(ciSearchQuery) ||
              (c.semantic_differences || '').toLowerCase().includes(ciSearchQuery);
     });
+  }
+
+  // Date range filter
+  var dateFrom = document.getElementById('ciDateFrom') ? document.getElementById('ciDateFrom').value : '';
+  var dateTo = document.getElementById('ciDateTo') ? document.getElementById('ciDateTo').value : '';
+  if (dateFrom) {
+    var fromDate = new Date(dateFrom);
+    data = data.filter(function(c) { return new Date(c.detected_at) >= fromDate; });
+  }
+  if (dateTo) {
+    var toDate = new Date(dateTo);
+    toDate.setHours(23, 59, 59);
+    data = data.filter(function(c) { return new Date(c.detected_at) <= toDate; });
   }
 
   var tbody = document.getElementById('ciBody');
@@ -3141,10 +3172,11 @@ async function submitPolicy(e) {
 }
 
 function editPolicy(policy) {
-  document.getElementById('editPolicySection').classList.remove('d-none');
   document.getElementById('editPolicyName').value = policy.policy_name || '';
   document.getElementById('editPolicyDesc').value = policy.description || '';
   document.getElementById('editPolicyId').value = policy.policy_id;
+  var modal = new bootstrap.Modal(document.getElementById('editPolicyModal'));
+  modal.show();
 }
 
 async function submitPolicyEdit() {
@@ -3163,7 +3195,9 @@ async function submitPolicyEdit() {
       body: JSON.stringify(body)
     });
     if (!response.ok) throw new Error('Failed to update policy');
-    document.getElementById('editPolicySection').classList.add('d-none');
+    var modalEl = document.getElementById('editPolicyModal');
+    var modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
     loadPolicies();
     showToast('Policy updated successfully', 'success');
   } catch (err) {
@@ -3173,7 +3207,9 @@ async function submitPolicyEdit() {
 }
 
 function cancelPolicyEdit() {
-  document.getElementById('editPolicySection').classList.add('d-none');
+  var modalEl = document.getElementById('editPolicyModal');
+  var modal = bootstrap.Modal.getInstance(modalEl);
+  if (modal) modal.hide();
 }
 
 // ==================== POLICY SUB-TABS ====================
@@ -3427,7 +3463,14 @@ function timeAgo(dateStr) {
   var diff = Math.floor((now - then) / 1000); // seconds
   if (diff < 60) return 'Just now';
   if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 86400) {
+    var hours = then.getHours();
+    var minutes = then.getMinutes();
+    var ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    var timeStr = hours + ':' + (minutes < 10 ? '0' : '') + minutes + ' ' + ampm;
+    return 'Today, ' + timeStr;
+  }
   if (diff < 2592000) return Math.floor(diff / 86400) + 'd ago';
   if (diff < 31536000) return Math.floor(diff / 2592000) + 'mo ago';
   return Math.floor(diff / 31536000) + 'y ago';

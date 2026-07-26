@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
 -- 2. regulatory_sources
 CREATE TABLE IF NOT EXISTS regulatory_sources (
     source_id INT AUTO_INCREMENT PRIMARY KEY,
-    source_name VARCHAR(100) NOT NULL,
-    base_url VARCHAR(255) NOT NULL,
+    source_name VARCHAR(200) NOT NULL,
+    base_url VARCHAR(2048) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -24,12 +24,12 @@ CREATE TABLE IF NOT EXISTS regulatory_sources (
 CREATE TABLE IF NOT EXISTS regulations (
     reg_id INT AUTO_INCREMENT PRIMARY KEY,
     source_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    category VARCHAR(100) NOT NULL,
-    content TEXT NOT NULL,
+    title VARCHAR(500) NOT NULL,
+    category VARCHAR(200) NOT NULL,
+    content MEDIUMTEXT NOT NULL,
     version DECIMAL(5,2) DEFAULT 1.0,
     published_date DATETIME,
-    source_url VARCHAR(500),
+    source_url VARCHAR(2048),
     ingested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (source_id) REFERENCES regulatory_sources(source_id) ON DELETE CASCADE
 );
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS alerts (
     reg_id INT NOT NULL,
     change_id INT,
     severity_level ENUM('Immediate Action Required', 'Review Recommended', 'Informational') NOT NULL,
-    department VARCHAR(100) NULL,
+    department VARCHAR(200) NULL,
     status ENUM('Unread', 'Read', 'Dismissed') DEFAULT 'Unread',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (reg_id) REFERENCES regulations(reg_id) ON DELETE CASCADE,
@@ -67,8 +67,8 @@ CREATE TABLE IF NOT EXISTS alerts (
 -- 6. internal_policies
 CREATE TABLE IF NOT EXISTS internal_policies (
     policy_id INT AUTO_INCREMENT PRIMARY KEY,
-    policy_name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
+    policy_name VARCHAR(500) NOT NULL,
+    description MEDIUMTEXT NOT NULL,
     last_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
@@ -90,8 +90,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     alert_id INT,
     gap_id INT,
     assigned_to INT NULL,
-    department VARCHAR(100) NULL,
-    title VARCHAR(255) NOT NULL,
+    department VARCHAR(200) NULL,
+    title VARCHAR(500) NOT NULL,
     description TEXT,
     deadline DATETIME NOT NULL,
     status ENUM('Pending', 'In Progress', 'Completed') DEFAULT 'Pending',
@@ -105,8 +105,8 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE TABLE IF NOT EXISTS audit_logs (
     log_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    action_type VARCHAR(50) NOT NULL,
-    target_table VARCHAR(50) NOT NULL,
+    action_type VARCHAR(100) NOT NULL,
+    target_table VARCHAR(100) NOT NULL,
     target_id INT NOT NULL,
     description TEXT NOT NULL,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -116,9 +116,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 -- 10. departments
 CREATE TABLE IF NOT EXISTS departments (
     dept_id INT AUTO_INCREMENT PRIMARY KEY,
-    dept_name VARCHAR(100) NOT NULL,
+    dept_name VARCHAR(200) NOT NULL,
     dept_description TEXT,
-    responsible_categories VARCHAR(500) NOT NULL,
+    responsible_categories VARCHAR(1000) NOT NULL,
     default_assignee INT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (default_assignee) REFERENCES users(user_id) ON DELETE CASCADE
@@ -147,10 +147,10 @@ CREATE TABLE IF NOT EXISTS policy_proposals (
     proposal_id INT AUTO_INCREMENT PRIMARY KEY,
     proposal_type ENUM('New Policy', 'Policy Update') NOT NULL,
     target_policy_id INT NULL,
-    policy_name VARCHAR(255) NOT NULL,
-    proposed_description TEXT NOT NULL,
+    policy_name VARCHAR(500) NOT NULL,
+    proposed_description MEDIUMTEXT NOT NULL,
     reasoning TEXT NOT NULL,
-    related_gap_ids VARCHAR(500),
+    related_gap_ids VARCHAR(1000),
     status ENUM('Pending', 'Accepted', 'Rejected') DEFAULT 'Pending',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     reviewed_by INT NULL,
@@ -162,11 +162,11 @@ CREATE TABLE IF NOT EXISTS policy_proposals (
 CREATE TABLE IF NOT EXISTS policy_versions (
     version_id INT AUTO_INCREMENT PRIMARY KEY,
     policy_id INT NOT NULL,
-    policy_name VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
+    policy_name VARCHAR(500) NOT NULL,
+    description MEDIUMTEXT NOT NULL,
     version_number INT NOT NULL DEFAULT 1,
     changed_by INT NOT NULL,
-    change_reason VARCHAR(500),
+    change_reason VARCHAR(1000),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (policy_id) REFERENCES internal_policies(policy_id) ON DELETE CASCADE,
     FOREIGN KEY (changed_by) REFERENCES users(user_id) ON DELETE CASCADE
@@ -191,8 +191,7 @@ INSERT IGNORE INTO regulatory_sources (source_name, base_url) VALUES
 INSERT IGNORE INTO regulations (source_id, title, category, content, version) VALUES 
 (1, 'MAS Notice 626 - Prevention of Money Laundering and Countering the Financing of Terrorism', 'AML', 'Sets out requirements for banks relating to CDD, EDD, ongoing monitoring, suspicious transaction reporting, record keeping, and wire transfer obligations.', 2.0);
 
-INSERT IGNORE INTO internal_policies (policy_name, description) VALUES 
--- === AML/CFT POLICIES & PROCEDURES ===
+INSERT IGNORE INTO internal_policies (policy_name, description) VALUES
 ('GLDB AML/CFT Compliance Policy', 'Automated eKYC and Enhanced Due Diligence (EDD) procedures for MSME onboarding, including AI-driven biometric verification, UBO screening, and shell company detection via third-party identity systems (e.g., Chekk). Mandates senior management approval for high-risk customer relationships.\n\nPROCEDURES:\n1. Initial Risk Assessment: Classify all new customers as Low/Medium/High risk using the GLDB Risk Scoring Matrix (factors: country, industry, transaction volume, PEP status).\n2. Standard CDD: Collect certified copies of ACRA BizFile, director IDs, and proof of business address. Verify against MAS CFTS sanctions list within 24 hours.\n3. Enhanced Due Diligence (EDD): For High-risk customers — conduct source of wealth verification, obtain senior management sign-off, and schedule 6-monthly relationship reviews.\n4. Ongoing Monitoring: Review all customer risk profiles annually. Trigger re-assessment if transaction patterns deviate >30% from declared business profile.\n5. Record Retention: Maintain all CDD records for minimum 5 years after account closure per MAS Notice 626.'),
 
 ('GLDB KYC Onboarding Policy', 'Standard procedure for verifying MSME identities using digital document acquisition, biometric verification, and cross-referencing against localized internal blacklists and international sanctions lists.\n\nPROCEDURES:\n1. Document Collection: Obtain ACRA BizFile profile, Certificate of Incorporation, Memorandum & Articles of Association, and director/shareholder identification documents.\n2. Identity Verification: Run biometric facial recognition against government-issued ID. Verify company registration number against ACRA live database.\n3. UBO Identification: Identify all individuals with ≥25% ownership or significant control. Obtain their NRIC/passport copies and proof of address.\n4. Sanctions Screening: Screen all directors, UBOs, and the company against MAS CFTS list, UN Consolidated List, OFAC SDN list, and EU sanctions list.\n5. PEP Screening: Check all individuals against Dow Jones or World-Check PEP databases. Flag any matches for EDD.\n6. Approval Workflow: Low-risk accounts auto-approved after system checks pass. Medium-risk requires L2 compliance review within 48 hours. High-risk requires Head of Compliance sign-off.'),
@@ -232,24 +231,6 @@ INSERT IGNORE INTO internal_policies (policy_name, description) VALUES
 
 ('GLDB Compliance Officer Certification Program', 'Annual certification program ensuring compliance staff maintain up-to-date knowledge of regulatory requirements, internal procedures, and enforcement trends.\n\nCERTIFICATION REQUIREMENTS:\n1. Annual Regulatory Update: Complete 8 hours of CPD covering MAS regulatory developments, FATF mutual evaluations, and regional enforcement trends. Includes review of all MAS circulars issued in the past year.\n2. Case Study Assessment: Analyze 3 anonymized compliance scenarios and provide written recommendations. Graded by Head of Compliance. Minimum B grade required.\n3. Procedure Recertification: Demonstrate proficiency in: STR filing, sanctions screening, EDD process, and customer risk re-assessment. Practical assessment with mock cases.\n4. Ethics & Independence: Complete annual declaration of conflicts of interest. Review and acknowledge GLDB Code of Conduct.\n5. Specialization Tracks: Choose one: (a) Financial Crime Investigation, (b) Regulatory Technology, (c) Policy Drafting & Governance. Complete 4 additional hours in chosen track.\n6. Certification Validity: Valid for 12 months. Lapse triggers automatic restriction from signing off on compliance decisions until re-certified.');
 
-
-INSERT IGNORE INTO regulation_changes (reg_id, previous_version, new_version, semantic_differences, impact_score, affected_areas, explicit_deadline, old_content, new_content) VALUES 
-(1, 1.0, 2.0, 'Added mandatory automated transaction monitoring for digital payment token (DPT) service providers and jurisdictions classified as high risk. Introduced new threshold of SGD 1,500 for enhanced wire transfer due diligence. Extended record retention from 5 to 7 years for high-risk customer transactions.', 'Critical', 'Transaction Monitoring, Wire Transfers, Record Keeping, Enhanced Due Diligence', '2027-03-01',
-'MAS Notice 626 — Prevention of Money Laundering and Countering the Financing of Terrorism (Version 1.0)\n\nPart I — Preliminary\n1.1 This Notice is issued pursuant to section 27B of the Monetary Authority of Singapore Act.\n1.2 This Notice applies to all banks licensed under the Banking Act.\n\nPart III — Customer Due Diligence (CDD)\n3.1 A bank shall conduct CDD measures when establishing business relations with any customer.\n3.2 CDD measures include:\n(a) Identifying the customer and verifying identity using reliable, independent source documents;\n(b) Identifying the beneficial owner and taking reasonable measures to verify identity;\n(c) Understanding the purpose and intended nature of the business relationship.\n\nPart IV — Enhanced Due Diligence (EDD)\n4.1 A bank shall perform EDD where the customer or transaction poses higher risk of money laundering.\n4.2 EDD applies to:\n(a) Politically Exposed Persons (PEPs);\n(b) Customers from countries with inadequate AML/CFT measures;\n(c) Complex or unusually large transactions.\n\nPart V — Ongoing Monitoring\n5.1 A bank shall conduct ongoing monitoring of business relationships.\n5.2 Transactions shall be monitored to ensure consistency with customer profile.\n\nPart VI — Suspicious Transaction Reporting\n6.1 A bank shall file a Suspicious Transaction Report (STR) with STRO where there is suspicion of money laundering or terrorism financing.\n6.2 STRs shall be filed as soon as reasonably practicable.\n\nPart VII — Record Keeping\n7.1 A bank shall maintain records of all transactions for a minimum of 5 years.\n7.2 CDD records shall be retained for 5 years after termination of business relationship.\n\nPart VIII — Wire Transfers\n8.1 For cross-border wire transfers, a bank shall include originator name, account number, and address.\n8.2 For domestic wire transfers above SGD 5,000, originator information is required.',
-'MAS Notice 626 — Prevention of Money Laundering and Countering the Financing of Terrorism (Version 2.0, Effective 1 March 2027)\n\nPart I — Preliminary\n1.1 This Notice is issued pursuant to section 27B of the Monetary Authority of Singapore Act.\n1.2 This Notice applies to all banks licensed under the Banking Act and all digital payment token (DPT) service providers licensed under the Payment Services Act 2019.\n\nPart III — Customer Due Diligence (CDD)\n3.1 A bank shall conduct CDD measures when establishing business relations with any customer.\n3.2 CDD measures include:\n(a) Identifying the customer and verifying identity using reliable, independent source documents;\n(b) Identifying the beneficial owner and taking reasonable measures to verify identity;\n(c) Understanding the purpose and intended nature of the business relationship;\n(d) [NEW] For DPT service providers: verifying the source of digital assets and conducting blockchain analytics where transaction value exceeds SGD 1,500.\n\nPart IV — Enhanced Due Diligence (EDD)\n4.1 A bank shall perform EDD where the customer or transaction poses higher risk of money laundering.\n4.2 EDD applies to:\n(a) Politically Exposed Persons (PEPs);\n(b) Customers from countries identified by FATF as having strategic deficiencies;\n(c) Complex or unusually large transactions;\n(d) [NEW] All transactions involving digital payment tokens where the originator or beneficiary is in a jurisdiction classified as high-risk by MAS;\n(e) [NEW] Any single DPT transfer exceeding SGD 20,000 or aggregate DPT transfers exceeding SGD 50,000 in any calendar month.\n\nPart V — Ongoing Monitoring\n5.1 A bank shall conduct ongoing monitoring of business relationships.\n5.2 Transactions shall be monitored using automated systems to ensure consistency with customer profile.\n5.3 [NEW] Banks and DPT service providers shall implement automated transaction monitoring systems capable of detecting:\n(a) Structuring patterns designed to avoid reporting thresholds;\n(b) Rapid movement of funds through multiple wallets or accounts;\n(c) Transactions with sanctioned jurisdictions or designated persons.\n\nPart VI — Suspicious Transaction Reporting\n6.1 A bank shall file a Suspicious Transaction Report (STR) with STRO where there is suspicion of money laundering or terrorism financing.\n6.2 [AMENDED] STRs shall be filed within 1 business day of the determination of suspicion (previously: as soon as reasonably practicable).\n\nPart VII — Record Keeping\n7.1 [AMENDED] A bank shall maintain records of all transactions for a minimum of 7 years (previously: 5 years).\n7.2 CDD records shall be retained for 7 years after termination of business relationship.\n7.3 [NEW] Records must be maintained in a format that allows retrieval within 4 hours of a request by MAS or law enforcement.\n\nPart VIII — Wire Transfers\n8.1 For cross-border wire transfers, a bank shall include originator name, account number, and address.\n8.2 [AMENDED] For domestic wire transfers above SGD 1,500 (previously: SGD 5,000), full originator and beneficiary information is required.\n8.3 [NEW] For DPT transfers exceeding SGD 1,500, the originating institution must transmit originator wallet address, verified name, and account reference to the beneficiary institution.\n\nPart IX — Penalties\n9.1 Non-compliance with this Notice may result in a financial penalty not exceeding SGD 1,000,000.\n9.2 Banks must be fully compliant with all new requirements by 1 March 2027.');
-
-INSERT IGNORE INTO alerts (reg_id, change_id, severity_level) VALUES 
-(1, 1, 'Immediate Action Required'),
-(2, NULL, 'Review Recommended');
-
-INSERT IGNORE INTO compliance_gaps (reg_id, policy_id, gap_description) VALUES 
-(1, 1, 'Current KYC policy lacks specific escalation steps for the newly identified high-risk jurisdictions in Notice 626.');
-
-INSERT IGNORE INTO tasks (alert_id, assigned_to, title, description, deadline) VALUES 
-(1, 1, 'Update AML Screening Rules', 'Adjust the Node.js screening logic to incorporate the new MAS high-risk jurisdictions.', DATE_ADD(NOW(), INTERVAL 7 DAY));
-
-INSERT IGNORE INTO audit_logs (user_id, action_type, target_table, target_id, description) VALUES 
-(1, 'TASK_CREATED', 'tasks', 1, 'Task assigned to Alex Tan for AML rule update.');
 
 INSERT IGNORE INTO departments (dept_name, dept_description, responsible_categories, default_assignee) VALUES 
 ('Compliance Operations', 'AML/CFT and KYC compliance', 'AML,KYC,AML/CFT', 1),
