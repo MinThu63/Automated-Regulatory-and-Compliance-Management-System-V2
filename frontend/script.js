@@ -2899,11 +2899,21 @@ function prefillTaskFromImpact(changeId, regulationTitle, department) {
     var titleEl = document.getElementById('taskTitleInput');
     var descEl  = document.getElementById('taskDescInput');
     var deptEl  = document.getElementById('taskDeptSelect');
+    var alertEl = document.getElementById('taskAlertSelect');
     if (titleEl) titleEl.value = 'Remediate: ' + regulationTitle;
     if (descEl)  descEl.value  = 'Remediation task for regulatory change ID ' + changeId + '. Review the change and update affected policies/procedures accordingly.';
     if (deptEl) {
       for (var i = 0; i < deptEl.options.length; i++) {
         if (deptEl.options[i].value === department) { deptEl.selectedIndex = i; break; }
+      }
+    }
+    // Auto-select the alert linked to this change_id
+    if (alertEl && allCIData) {
+      var ciRecord = allCIData.find(function(c) { return c.change_id === changeId; });
+      if (ciRecord && ciRecord.alert_id) {
+        for (var j = 0; j < alertEl.options.length; j++) {
+          if (parseInt(alertEl.options[j].value) === ciRecord.alert_id) { alertEl.selectedIndex = j; break; }
+        }
       }
     }
   }, 300);

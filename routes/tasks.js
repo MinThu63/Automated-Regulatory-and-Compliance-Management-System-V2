@@ -35,6 +35,12 @@ router.post('/', async (req, res) => {
       'INSERT INTO tasks (alert_id, department, title, description, deadline) VALUES (?, ?, ?, ?, ?)',
       [alert_id || null, department, title, description || null, deadline]
     );
+
+    // Link task to alert via task_alerts junction table (so Changes & Impact shows the linkage)
+    if (alert_id) {
+      await pool.query('INSERT IGNORE INTO task_alerts (task_id, alert_id) VALUES (?, ?)', [result.insertId, alert_id]);
+    }
+
     await logAudit(1, 'TASK_CREATED', 'tasks', result.insertId, 'Task created: ' + title + ' (Department: ' + department + ')');
     res.status(201).json({ message: 'Task created', task_id: result.insertId });
   } catch (err) {
